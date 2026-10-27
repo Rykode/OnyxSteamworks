@@ -1,0 +1,173 @@
+use eframe::egui::{self, Align2, FontId, Pos2, Rect, Sense, UiBuilder, Vec2};
+
+use crate::app::App;
+use crate::ui::kit::{self, Button, ButtonKind};
+use crate::ui::theme;
+
+#[derive(Default)]
+struct Draft {
+    advisor_mb: u32,
+    growth_pct: u32,
+    loaded: bool,
+}
+
+pub struct AdvancedState {
+    draft: Draft,
+}
+
+impl AdvancedState {
+    pub fn new() -> Self {
+        Self {
+            draft: Draft::default(),
+        }
+    }
+
+    pub fn reload(&mut self) {
+        self.draft.loaded = false;
+    }
+}
+
+fn load_into(draft: &mut Draft) {
+    if draft.loaded {
+        return;
+    }
+    let cfg = crate::config::load_settings().unwrap_or_default();
+    draft.advisor_mb = if cfg.advisor_large_mb == 0 {
+        100
+    } else {
+        cfg.advisor_large_mb
+    };
+    draft.growth_pct = if cfg.analytics_growth_pct == 0 {
+        30
+    } else {
+        cfg.analytics_growth_pct
+    };
+    draft.loaded = true;
+}
+
+fn persist(draft: &Draft) {
+    let mut cfg = crate::config::load_settings().unwrap_or_default();
+    cfg.advisor_large_mb = draft.advisor_mb;
+    cfg.analytics_growth_pct = draft.growth_pct;
+    if let Err(e) = crate::config::save_settings(&cfg) {
+        crate::config::report_problem(format!("Could not save settings: {e}"));
+    }
+}
+
+pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
+    let px = |v: f32| theme::px(v, s);
+    let mut cu = ui.new_child(UiBuilder::new().max_rect(rect));
+    cu.set_clip_rect(rect);
+    egui::ScrollArea::vertical()
+        .id_salt("advanced_scroll")
+        .auto_shrink([false, false])
+        .show(&mut cu, |ui| {
+            let (canvas, _) = ui.allocate_exact_size(
+                Vec2::new(rect.width() - px(16.0), px(366.0)),
+                Sense::hover(),
+            );
+            analytics(app, ui, canvas, s);
+            let dev = Rect::from_min_max(
+                Pos2::new(canvas.left(), canvas.top() + px(164.0)),
+                Pos2::new(canvas.right(), canvas.bottom()),
+            );
+            super::developer::show(app, ui, dev, s);
+        });
+}
+
+fn analytics(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
+    let px = |v: f32| theme::px(v, s);
+    load_into(&mut app.advanced_ui.draft);
+    let draft = &mut app.advanced_ui.draft;
+
+    let ay = rect.top();
+    kit::label(
+        &ui.painter().clone(),
+        Pos2::new(rect.left(), ay),
+        "Analytics",
+        s,
+    );
+    let acard = Rect::from_min_size(
+        Pos2::new(rect.left(), ay + px(26.0)),
+        Vec2::new(rect.width().min(px(560.0)), px(104.0)),
+    );
+    kit::bordered(
+        &ui.painter().clone(),
+        acard,
+        theme::SURFACE_2,
+        theme::LINE,
+        px(theme::RADIUS_PANEL_MIN),
+    );
+    let ax = acard.left() + px(20.0);
+    let mut changed = false;
+    changed |= stepper(
+        ui,
+        Pos2::new(ax, acard.top() + px(20.0)),
+        "Flag large files over (MB)",
+        &mut draft.advisor_mb,
+        (10, 10, 2000),
+        s,
+    );
+    changed |= stepper(
+        ui,
+        Pos2::new(ax, acard.top() + px(58.0)),
+        "Alert when build grows by (%)",
+        &mut draft.growth_pct,
+        (5, 5, 300),
+        s,
+    );
+    if changed {
+        persist(draft);
+    }
+}
+
+fn stepper(
+    ui: &mut egui::Ui,
+    at: Pos2,
+    label: &str,
+    value: &mut u32,
+    bounds: (u32, u32, u32),
+    s: f32,
+) -> bool {
+    let px = |v: f32| theme::px(v, s);
+    let (step, min, max) = bounds;
+    let (x, y) = (at.x, at.y);
+    ui.painter().text(
+        Pos2::new(x, y + px(15.0)),
+        Align2::LEFT_CENTER,
+        label,
+        FontId::new(px(12.5), theme::family_medium()),
+        theme::INK_DIM,
+    );
+    let bx = x + px(230.0);
+    let minus = Rect::from_min_size(Pos2::new(bx, y), Vec2::splat(px(30.0)));
+    let plus = Rect::from_min_size(
+        Pos2::new(minus.right() + px(44.0), y),
+        Vec2::splat(px(30.0)),
+    );
+    ui.painter().text(
+        Pos2::new((minus.right() + plus.left()) / 2.0, y + px(15.0)),
+        Align2::CENTER_CENTER,
+        value.to_string(),
+        FontId::new(px(13.5), theme::family_semibold()),
+        theme::INK,
+    );
+    let mut changed = false;
+    if Button::new("-", ButtonKind::Secondary)
+        .show(ui, minus, s)
+        .clicked()
+        && *value > min
+    {
+        *value = value.saturating_sub(step).max(min);
+        changed = true;
+    }
+    if Button::new("+", ButtonKind::Secondary)
+        .show(ui, plus, s)
+        .clicked()
+        && *value < max
+    {
+        *value = (*value + step).min(max);
+        changed = true;
+    }
+    changed
+}
