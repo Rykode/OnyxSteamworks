@@ -19,6 +19,7 @@ use crate::ui::pages::history::rel_time;
 use crate::ui::{nav, pages, theme};
 
 pub fn show(app: &mut App, ui: &mut egui::Ui, layout: &Layout) {
+    crate::ui::kit::card(ui.painter(), layout.body, layout.scale);
     let s = layout.scale;
     let ctx = ui.ctx().clone();
     let idx = nav::index(Page::Automation);

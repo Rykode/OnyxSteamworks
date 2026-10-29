@@ -215,7 +215,7 @@ pub fn execute_build(
     let errors = validate_project(project);
     if !errors.is_empty() {
         for e in &errors {
-            eprintln!("validation: {} — {}", e.field, e.message);
+            eprintln!("validation: {}: {}", e.field, e.message);
         }
         return VALIDATION;
     }

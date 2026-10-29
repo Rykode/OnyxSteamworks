@@ -291,7 +291,7 @@ fn doctor() -> i32 {
         } else {
             "missing"
         };
-        println!("  {} — steamcmd: {steam}, content root: {content}", p.name);
+        println!("  {}: steamcmd: {steam}, content root: {content}", p.name);
     }
     SUCCESS
 }
@@ -364,8 +364,8 @@ pub fn ci_workflow_yaml(project: &Project) -> String {
          # Steam Guard cannot run in CI, so authenticate once on a trusted machine, then\n\
          # store the cached session (the SteamCMD config directory, e.g. a base64-encoded\n\
          # config.vdf) as an encrypted repository secret and restore it before the build.\n\
-         # This is a starting template only: verify the current approach — for example\n\
-         # game-ci/steam-deploy — against the latest documentation before relying on it,\n\
+         # This is a starting template only: verify the current approach (for example\n\
+         # game-ci/steam-deploy) against the latest documentation before relying on it,\n\
          # as Steam's authentication flow changes over time.\n\
          name: Deploy to Steam\n\
          on:\n\

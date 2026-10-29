@@ -117,16 +117,16 @@ fn scan_text(path: &Path, rel: &str, issues: &mut Vec<Issue>) {
     for (i, line) in text.lines().enumerate() {
         let n = i + 1;
         if is_private_key(line) {
-            issues.push(Issue::error(format!("{rel}:{n} — private key")));
+            issues.push(Issue::error(format!("{rel}:{n}: private key")));
         }
         if has_aws_key(line) {
-            issues.push(Issue::error(format!("{rel}:{n} — AWS access key")));
+            issues.push(Issue::error(format!("{rel}:{n}: AWS access key")));
         }
         if has_discord_webhook(line) {
-            issues.push(Issue::error(format!("{rel}:{n} — Discord webhook URL")));
+            issues.push(Issue::error(format!("{rel}:{n}: Discord webhook URL")));
         }
         if has_secret_assignment(line) {
-            issues.push(Issue::error(format!("{rel}:{n} — hardcoded secret")));
+            issues.push(Issue::error(format!("{rel}:{n}: hardcoded secret")));
         }
     }
 }
@@ -178,10 +178,10 @@ pub fn scan(project: &Project) -> Vec<Issue> {
                 continue;
             }
             if secret_set.is_match(name.as_str()) {
-                issues.push(Issue::error(format!("{rel} — credential or key file")));
+                issues.push(Issue::error(format!("{rel}: credential or key file")));
             } else if junk_set.is_match(name.as_str()) {
                 issues.push(
-                    Issue::warning(format!("{rel} — build or editor junk"))
+                    Issue::warning(format!("{rel}: build or editor junk"))
                         .with_fix(Fix::AddExclusion(name.clone())),
                 );
             }
@@ -189,7 +189,7 @@ pub fn scan(project: &Project) -> Vec<Issue> {
             let len = entry.metadata().map(|m| m.len()).unwrap_or(0);
             if len > OVERSIZE {
                 issues.push(Issue::warning(format!(
-                    "{rel} — large file ({})",
+                    "{rel}: large file ({})",
                     human_size(len)
                 )));
             }

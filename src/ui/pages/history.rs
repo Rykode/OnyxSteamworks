@@ -20,6 +20,7 @@ use crate::ui::layout::Layout;
 use crate::ui::{kit, nav, pages, theme};
 
 pub fn show(app: &mut App, ui: &mut egui::Ui, layout: &Layout) {
+    crate::ui::kit::card(ui.painter(), layout.body, layout.scale);
     let s = layout.scale;
     let idx = nav::index(Page::History);
     let tabs = nav::ITEMS[idx].sub_tabs;

@@ -59,6 +59,13 @@ impl ReviewState {
         }
     }
 
+    pub fn summary_for(&self, project_id: &str) -> Option<&DiffSummary> {
+        self.result
+            .as_ref()
+            .filter(|_| self.project_id == project_id)
+            .map(|(_, d)| d)
+    }
+
     fn request(&mut self, project: &Project, previous: Option<PathBuf>, ctx: &egui::Context) {
         let (tx, rx) = channel();
         self.tx = tx;

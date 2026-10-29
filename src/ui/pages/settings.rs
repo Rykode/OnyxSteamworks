@@ -19,6 +19,7 @@ use crate::ui::layout::Layout;
 use crate::ui::{nav, pages};
 
 pub fn show(app: &mut App, ui: &mut egui::Ui, layout: &Layout) {
+    crate::ui::kit::card(ui.painter(), layout.body, layout.scale);
     let idx = nav::index(Page::Settings);
     let tabs = nav::ITEMS[idx].sub_tabs;
     let mut active = app.sub_tabs[idx];

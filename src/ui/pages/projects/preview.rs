@@ -66,3 +66,24 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &e
             }
         });
 }
+
+pub(super) fn modal(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context) {
+    let px = |v: f32| theme::px(v, s);
+    if !app.projects_ui.vdf_open {
+        return;
+    }
+    let mut open = true;
+    kit::modal(
+        ui,
+        ui.make_persistent_id("vdf_preview_modal"),
+        &mut open,
+        Vec2::new(px(820.0), px(600.0)),
+        s,
+        |ui| {
+            let d = ui.max_rect().shrink(px(26.0));
+            show(app, ui, d, s, ctx);
+            false
+        },
+    );
+    app.projects_ui.vdf_open = open;
+}

@@ -11,6 +11,9 @@ pub struct Input<'a> {
     helper: Option<&'a str>,
     mask: bool,
     readonly: bool,
+    mono: bool,
+    right_pad: f32,
+    icon: Option<char>,
 }
 
 impl<'a> Input<'a> {
@@ -22,6 +25,9 @@ impl<'a> Input<'a> {
             helper: None,
             mask: false,
             readonly: false,
+            mono: false,
+            right_pad: 0.0,
+            icon: None,
         }
     }
 
@@ -47,6 +53,21 @@ impl<'a> Input<'a> {
 
     pub fn readonly(mut self, readonly: bool) -> Self {
         self.readonly = readonly;
+        self
+    }
+
+    pub fn mono(mut self, mono: bool) -> Self {
+        self.mono = mono;
+        self
+    }
+
+    pub fn icon(mut self, glyph: char) -> Self {
+        self.icon = Some(glyph);
+        self
+    }
+
+    pub fn right_pad(mut self, pad: f32) -> Self {
+        self.right_pad = pad;
         self
     }
 
@@ -79,9 +100,26 @@ impl<'a> Input<'a> {
         kit::surface(&ui.painter().clone(), field, fill, radius);
 
         let inner = Rect::from_min_max(
-            Pos2::new(field.left() + px(14.0), field.top()),
-            Pos2::new(field.right() - px(14.0), field.bottom()),
+            Pos2::new(
+                field.left() + px(if self.icon.is_some() { 36.0 } else { 14.0 }),
+                field.top(),
+            ),
+            Pos2::new(field.right() - px(14.0) - px(self.right_pad), field.bottom()),
         );
+        if let Some(glyph) = self.icon {
+            ui.painter().text(
+                Pos2::new(field.left() + px(18.0), field.center().y),
+                Align2::CENTER_CENTER,
+                glyph.to_string(),
+                theme::icon_font(px(13.0), false),
+                theme::INK_FAINT,
+            );
+        }
+        let font = if self.mono {
+            FontId::new(px(12.5), egui::FontFamily::Monospace)
+        } else {
+            FontId::new(px(13.0), theme::family_medium())
+        };
 
         let resp = if self.readonly {
             let painter = ui.painter();
@@ -95,7 +133,6 @@ impl<'a> Input<'a> {
             } else {
                 theme::INK_DIM
             };
-            let font = FontId::new(px(13.0), theme::family_medium());
             let text = tail_fit(painter, shown, &font, inner.width());
             let clipped = text != shown;
             painter.with_clip_rect(inner).text(
@@ -121,7 +158,8 @@ impl<'a> Input<'a> {
                     .margin(egui::Margin::ZERO)
                     .align(Align2::LEFT_CENTER)
                     .password(self.mask)
-                    .hint_text(self.hint)
+                    .hint_text(egui::RichText::new(self.hint).font(font.clone()).color(theme::INK_FAINT))
+                    .font(font)
                     .text_color(theme::INK)
                     .desired_width(f32::INFINITY),
             )

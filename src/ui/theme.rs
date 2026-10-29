@@ -13,6 +13,7 @@ pub const FIELD: Color32 = Color32::from_rgb(0x27, 0x28, 0x2E);
 pub const FIELD_HI: Color32 = Color32::from_rgb(0x30, 0x32, 0x3A);
 pub const LINE: Color32 = Color32::from_rgb(0x3A, 0x3D, 0x46);
 pub const LINE_SOFT: Color32 = Color32::from_rgb(0x2C, 0x2E, 0x36);
+pub const WELL: Color32 = Color32::from_rgb(0x12, 0x14, 0x16);
 
 pub const INK: Color32 = Color32::from_rgb(0xF4, 0xF5, 0xF7);
 pub const INK_DIM: Color32 = Color32::from_rgb(0xC9, 0xCF, 0xDA);

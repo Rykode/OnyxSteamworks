@@ -83,7 +83,7 @@ impl BuildInfo {
             self.branch.as_str()
         };
         let mut out = format!(
-            "{} **{} — build #{} {}**\nBranch: {branch} · Duration: {}",
+            "{} **{}: build #{} {}**\nBranch: {branch} · Duration: {}",
             self.outcome.mark(),
             self.project,
             self.number,

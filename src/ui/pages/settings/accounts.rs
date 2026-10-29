@@ -234,7 +234,7 @@ fn start_authorize(app: &mut App, account: &str, ctx: &egui::Context) {
             app.nav_request = Some(Page::Build);
             app.toasts.push(
                 kit::ToastLevel::Success,
-                format!("Authorizing {account} — answer any prompt on the Build page"),
+                format!("Authorizing {account}, answer any prompt on the Build page"),
             );
         }
         Err(e) => {

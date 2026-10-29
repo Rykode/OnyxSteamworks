@@ -9,48 +9,50 @@ fn jump_offset(row_height: f32, row_spacing: f32, rows: usize) -> f32 {
     rows.max(1) as f32 * (row_height + row_spacing)
 }
 
-pub fn show(state: &mut BuildState, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &egui::Context) {
+pub fn show(state: &mut BuildState, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &egui::Context) {
     let px = |v: f32| theme::px(v, s);
-    kit::bordered(
-        &ui.painter().clone(),
-        rect,
-        theme::BG,
-        theme::LINE,
-        px(theme::RADIUS_CARD),
+    let title = kit::caps(
+        ui.painter(),
+        Pos2::new(card.left() + px(21.0), card.top() + px(36.0)),
+        Align2::LEFT_CENTER,
+        "Console",
+        12.5,
+        theme::INK_MUTED,
+        s,
     );
-    let pad = px(12.0);
-    let bar_h = px(36.0);
-    let copy_w = px(96.0);
-    let bar = Rect::from_min_size(
-        Pos2::new(rect.left() + pad, rect.top() + pad),
-        Vec2::new(rect.width() - pad * 2.0, bar_h),
+    let copy_w = px(90.0);
+    let copy = Rect::from_min_size(
+        Pos2::new(card.right() - px(21.0) - copy_w, card.top() + px(18.0)),
+        Vec2::new(copy_w, px(36.0)),
     );
-    let search_rect =
-        Rect::from_min_size(bar.min, Vec2::new(bar.width() - copy_w - px(8.0), bar_h));
+    let search_rect = Rect::from_min_max(
+        Pos2::new(title.right().max(card.left() + px(100.0) - px(12.0)) + px(12.0), card.top() + px(20.5)),
+        Pos2::new(copy.left() - px(12.0), card.top() + px(51.5)),
+    );
     Input::new(&mut state.search)
         .hint("Filter log")
+        .icon(theme::icon::MAGNIFYING_GLASS)
         .show(ui, search_rect, s);
     if Button::new("Copy", ButtonKind::Secondary)
         .icon(theme::icon::COPY)
-        .show(
-            ui,
-            Rect::from_min_size(
-                Pos2::new(bar.right() - copy_w, bar.top()),
-                Vec2::new(copy_w, bar_h),
-            ),
-            s,
-        )
+        .show(ui, copy, s)
         .clicked()
     {
         ctx.copy_text(state.log_text());
     }
 
+    let well = Rect::from_min_max(
+        Pos2::new(card.left() + px(21.0), card.top() + px(67.0)),
+        Pos2::new(card.right() - px(21.0), card.bottom() - px(12.5)),
+    );
+    ui.painter()
+        .rect_filled(well, theme::corner(px(14.0)), theme::WELL);
     let log_rect = Rect::from_min_max(
-        Pos2::new(rect.left() + pad, bar.bottom() + px(10.0)),
-        Pos2::new(rect.right() - pad, rect.bottom() - pad),
+        Pos2::new(well.left() + px(16.0), well.top() + px(14.0)),
+        Pos2::new(well.right() - px(8.0), well.bottom() - px(10.0)),
     );
     let query = state.search.as_bytes();
-    let rows: Vec<(&str, bool)> = state
+    let rows: Vec<(&str, &str, bool)> = state
         .log
         .iter()
         .filter(|l| {
@@ -60,22 +62,24 @@ pub fn show(state: &mut BuildState, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: 
                     .windows(query.len())
                     .any(|w| w.eq_ignore_ascii_case(query))
         })
-        .map(|l| (l.text.as_str(), l.error))
+        .map(|l| (l.time.as_str(), l.text.as_str(), l.error))
         .collect();
 
     let id = ui.make_persistent_id("build_console");
     let jump = ctx.data_mut(|d| d.get_temp::<bool>(id.with("jump")).unwrap_or(false));
-    let row_h = px(16.0);
-    let font = FontId::new(px(12.5), egui::FontFamily::Monospace);
+    let row_h = px(23.6);
+    let font = FontId::new(px(13.0), egui::FontFamily::Monospace);
+    let text_x = px(74.0);
 
     let mut cui = ui.new_child(egui::UiBuilder::new().max_rect(log_rect));
     cui.set_clip_rect(log_rect);
+    cui.spacing_mut().item_spacing.y = 0.0;
     let mut sa = egui::ScrollArea::vertical()
         .id_salt("build_console_scroll")
         .auto_shrink([false, false])
         .stick_to_bottom(true);
     if jump {
-        let content_height = jump_offset(row_h, cui.spacing().item_spacing.y, rows.len());
+        let content_height = jump_offset(row_h, 0.0, rows.len());
         sa = sa.vertical_scroll_offset(content_height);
         ctx.data_mut(|d| d.insert_temp(id.with("jump"), false));
     }
@@ -90,21 +94,22 @@ pub fn show(state: &mut BuildState, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: 
                 Align2::LEFT_CENTER,
                 "No output yet.",
                 font.clone(),
-                theme::INK_MUTED,
+                theme::INK_FAINT,
             );
             return;
         }
         for i in range {
             let (r, _) =
                 ui.allocate_exact_size(Vec2::new(ui.available_width(), row_h), Sense::hover());
-            if let Some((text, error)) = rows.get(i) {
+            if let Some((time, text, error)) = rows.get(i) {
                 ui.painter().text(
                     r.left_center(),
                     Align2::LEFT_CENTER,
-                    *text,
+                    *time,
                     font.clone(),
-                    if *error { theme::DANGER } else { theme::INK },
+                    theme::INK_FAINT,
                 );
+                line(ui.painter(), Pos2::new(r.left() + text_x, r.center().y), text, *error, &font);
             }
         }
     });
@@ -121,6 +126,35 @@ pub fn show(state: &mut BuildState, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: 
         {
             ctx.data_mut(|d| d.insert_temp(id.with("jump"), true));
         }
+    }
+}
+
+fn line(painter: &egui::Painter, pos: Pos2, text: &str, error: bool, font: &FontId) {
+    let lower = text.to_ascii_lowercase();
+    let color = if error {
+        theme::DANGER
+    } else if lower.starts_with("note") || lower.contains("warning") {
+        theme::WARNING
+    } else if lower.contains(" done") || lower.contains("success") || lower.contains("finished") {
+        theme::SUCCESS
+    } else if lower.contains("upload") || lower.trim_end().ends_with('%') {
+        theme::ACCENT_HI
+    } else {
+        theme::INK
+    };
+    let trimmed = text.trim_end();
+    if color == theme::INK && trimmed.ends_with("OK") {
+        let head = &trimmed[..trimmed.len() - 2];
+        let r = painter.text(pos, Align2::LEFT_CENTER, head, font.clone(), theme::INK);
+        painter.text(
+            Pos2::new(r.right(), pos.y),
+            Align2::LEFT_CENTER,
+            "OK",
+            font.clone(),
+            theme::SUCCESS,
+        );
+    } else {
+        painter.text(pos, Align2::LEFT_CENTER, text, font.clone(), color);
     }
 }
 

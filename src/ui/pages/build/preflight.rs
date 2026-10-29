@@ -13,6 +13,7 @@ pub struct PreflightState {
     running: bool,
     branch: String,
     results: Vec<Issue>,
+    ran: bool,
     tx: Sender<Vec<Issue>>,
     rx: Receiver<Vec<Issue>>,
 }
@@ -25,9 +26,23 @@ impl PreflightState {
             running: false,
             branch: String::new(),
             results: Vec::new(),
+            ran: false,
             tx,
             rx,
         }
+    }
+
+    pub fn outcome(&self) -> Option<(usize, usize)> {
+        if !self.ran || self.running {
+            return None;
+        }
+        let errors = self.results.iter().filter(|i| i.is_blocking()).count();
+        let warnings = self
+            .results
+            .iter()
+            .filter(|i| !i.is_blocking() && i.severity != Severity::Info)
+            .count();
+        Some((errors, warnings))
     }
 
     pub fn request(&mut self, project: &Project, branch: &str, ctx: &egui::Context) {
@@ -52,6 +67,7 @@ impl PreflightState {
         while let Ok(results) = self.rx.try_recv() {
             self.results = results;
             self.running = false;
+            self.ran = true;
         }
         if self.running {
             ctx.request_repaint();

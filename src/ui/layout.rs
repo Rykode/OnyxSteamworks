@@ -19,23 +19,24 @@ pub fn compute(window: Rect) -> Layout {
         window.min,
         vec2(window.width(), px(crate::ui::window::TITLEBAR_H)),
     );
-    let inset = px(8.0);
-    let rail_w = px(216.0);
     let rail = Rect::from_min_max(
-        pos2(window.left() + inset, titlebar.bottom()),
-        pos2(window.left() + inset + rail_w, window.bottom() - inset),
+        pos2(window.left() + px(15.0), titlebar.bottom()),
+        pos2(window.left() + px(229.0), window.bottom() - px(19.0)),
     );
-    let frame = Rect::from_min_max(
-        pos2(rail.right() + inset, titlebar.bottom()),
-        pos2(window.right() - inset, window.bottom() - inset),
+    let main_left = window.left() + px(251.0);
+    let header = Rect::from_min_max(
+        pos2(main_left, titlebar.bottom()),
+        pos2(window.right() - px(23.0), titlebar.bottom() + px(48.0)),
     );
-    let header = Rect::from_min_size(frame.min, vec2(frame.width(), px(60.0)));
-    let body = Rect::from_min_max(pos2(frame.left(), header.bottom() + inset), frame.max);
+    let body = Rect::from_min_max(
+        pos2(main_left, header.bottom() + px(12.0)),
+        pos2(header.right(), window.bottom() - px(22.0)),
+    );
     let content = Rect::from_min_max(
-        pos2(body.left() + px(28.0), body.top() + px(22.0)),
-        pos2(body.right() - px(28.0), body.bottom() - px(24.0)),
+        pos2(body.left() + px(20.0), body.top() + px(20.0)),
+        pos2(body.right() - px(20.0), body.bottom() - px(20.0)),
     );
-    let toast_anchor = pos2(frame.right() - px(16.0), header.bottom() + px(12.0));
+    let toast_anchor = pos2(body.right() - px(16.0), body.top() + px(12.0));
     Layout {
         scale: s,
         rail,
@@ -46,5 +47,3 @@ pub fn compute(window: Rect) -> Layout {
         toast_anchor,
     }
 }
-
-impl Layout {}

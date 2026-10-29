@@ -1,123 +1,197 @@
-use eframe::egui::{self, Align2, FontId, Pos2, Rect, Vec2};
+use std::collections::HashMap;
 
-use super::depots::header_row;
-use super::editor::{label, row};
+use eframe::egui::{self, Align2, Color32, FontId, Pos2, Rect, Sense, Vec2};
+
 use crate::app::App;
-use crate::model::BranchLevel;
+use crate::model::{BranchLevel, BuildStatus};
 use crate::ui::kit;
 use crate::ui::kit::{Button, ButtonKind, Input};
 use crate::ui::theme;
 
-pub(super) fn branch_section(app: &mut App, ui: &mut egui::Ui, s: f32) {
-    let px = |v: f32| theme::px(v, s);
-    let hr = header_row(ui, "Branches", s);
-    if Button::new("+ Branch", ButtonKind::Secondary)
-        .show(
-            ui,
-            Rect::from_min_size(
-                Pos2::new(hr.right() - px(108.0), hr.center().y - px(15.0)),
-                Vec2::new(px(108.0), px(30.0)),
-            ),
-            s,
-        )
-        .clicked()
-    {
-        app.projects_ui.add_branch();
+pub(crate) fn level_style(level: BranchLevel) -> (&'static str, Color32) {
+    match level {
+        BranchLevel::Dev => ("Dev", theme::ACCENT_HI),
+        BranchLevel::Beta => ("Beta", theme::WARNING),
+        BranchLevel::Live => ("Live", theme::DANGER),
     }
+}
 
-    let mut remove = None;
-    for i in 0..app.projects_ui.base.branches.len() {
-        let r = row(ui, s, 48.0);
-        Input::new(&mut app.projects_ui.base.branches[i].name)
-            .hint("branch name")
-            .show(
-                ui,
-                Rect::from_min_size(r.min, Vec2::new(px(200.0), px(40.0))),
-                s,
-            );
-        let mut lvl = match app.projects_ui.base.branches[i].level {
-            BranchLevel::Dev => 0,
-            BranchLevel::Beta => 1,
-            BranchLevel::Live => 2,
-        };
-        kit::dropdown(
-            ui,
-            Rect::from_min_size(
-                Pos2::new(r.left() + px(210.0), r.top()),
-                Vec2::new(px(140.0), px(40.0)),
-            ),
-            &["Dev", "Beta", "Live"],
-            &mut lvl,
-            s,
-        );
-        app.projects_ui.base.branches[i].level =
-            [BranchLevel::Dev, BranchLevel::Beta, BranchLevel::Live][lvl];
-        if Button::new("X", ButtonKind::Danger)
-            .show(
-                ui,
-                Rect::from_min_size(
-                    Pos2::new(r.left() + px(360.0), r.top()),
-                    Vec2::new(px(44.0), px(40.0)),
-                ),
-                s,
-            )
-            .clicked()
-        {
-            remove = Some(i);
-        }
-        ui.add_space(px(6.0));
-    }
-    if let Some(i) = remove {
-        app.projects_ui.remove_branch(i);
-    }
-
-    ui.add_space(px(6.0));
-    label(ui, "Set live branch", s);
-    let names: Vec<String> = app
-        .projects_ui
-        .base
-        .branches
+pub(super) fn latest_builds(app: &mut App) -> HashMap<String, usize> {
+    app.history_ui.ensure_loaded();
+    let Some(id) = app.projects_ui.selected.clone() else {
+        return HashMap::new();
+    };
+    let mut records: Vec<_> = app
+        .history_ui
+        .records
         .iter()
-        .map(|b| b.name.clone())
+        .filter(|r| r.project_id == id)
         .collect();
-    if names.is_empty() {
-        let r = row(ui, s, 24.0);
-        ui.painter().text(
-            r.left_top(),
-            Align2::LEFT_TOP,
-            "Add a branch first",
-            FontId::new(px(12.0), theme::family_medium()),
-            theme::INK_MUTED,
-        );
-        return;
+    records.sort_by_key(|r| r.timestamp);
+    let mut out = HashMap::new();
+    for (n, r) in records.iter().enumerate() {
+        if r.status == BuildStatus::Success {
+            out.insert(r.branch.to_ascii_lowercase(), n + 1);
+        }
     }
-    let refs: Vec<&str> = names.iter().map(|s| s.as_str()).collect();
-    let mut sel = refs
-        .iter()
-        .position(|n| *n == app.projects_ui.base.set_live_branch)
-        .unwrap_or(0);
-    let r = row(ui, s, 44.0);
-    kit::dropdown(
-        ui,
-        Rect::from_min_size(r.min, Vec2::new(px(240.0), px(40.0))),
-        &refs,
-        &mut sel,
+    out
+}
+
+pub(super) fn row(
+    app: &App,
+    ui: &mut egui::Ui,
+    r: Rect,
+    i: usize,
+    builds: &HashMap<String, usize>,
+    s: f32,
+) -> bool {
+    let px = |v: f32| theme::px(v, s);
+    let b = &app.projects_ui.base.branches[i];
+    let resp = ui
+        .interact(r, ui.make_persistent_id(("branch_row", i)), Sense::click())
+        .on_hover_cursor(egui::CursorIcon::PointingHand);
+    let fill = if resp.hovered() {
+        theme::FIELD_HI
+    } else {
+        theme::FIELD
+    };
+    ui.painter().rect_filled(r, theme::corner(px(10.0)), fill);
+    let (label, color) = level_style(b.level);
+    kit::badge(
+        ui.painter(),
+        Pos2::new(r.left() + px(12.0), r.center().y),
+        Align2::LEFT_CENTER,
+        label,
+        color,
+        true,
         s,
     );
-    app.projects_ui.base.set_live_branch = refs.get(sel).map(|x| x.to_string()).unwrap_or_default();
-    if app
+    let name = if b.name.is_empty() { "unnamed" } else { b.name.as_str() };
+    ui.painter().text(
+        Pos2::new(r.left() + px(79.0), r.center().y),
+        Align2::LEFT_CENTER,
+        name,
+        FontId::new(px(14.0), theme::family_medium()),
+        theme::INK,
+    );
+    let live = app
         .projects_ui
         .base
         .set_live_branch
-        .eq_ignore_ascii_case("default")
-    {
-        let w = row(ui, s, 24.0);
-        ui.painter().text(
-            w.left_top(),
-            Align2::LEFT_TOP,
-            "SteamCMD cannot set the default branch live",
-            FontId::new(px(12.0), theme::family_medium()),
-            theme::DANGER,
-        );
+        .eq_ignore_ascii_case(&b.name);
+    let note = if b.level == BranchLevel::Live {
+        "confirm before push".to_string()
+    } else if let Some(n) = builds.get(&b.name.to_ascii_lowercase()) {
+        format!("build {n}")
+    } else if live {
+        "set live on upload".to_string()
+    } else {
+        "no builds yet".to_string()
+    };
+    ui.painter().text(
+        Pos2::new(r.right() - px(15.0), r.center().y),
+        Align2::RIGHT_CENTER,
+        note,
+        FontId::new(px(12.5), egui::FontFamily::Monospace),
+        theme::INK_MUTED,
+    );
+    resp.clicked()
+}
+
+pub(super) fn modal(app: &mut App, ui: &mut egui::Ui, s: f32) {
+    let px = |v: f32| theme::px(v, s);
+    let Some(i) = app.projects_ui.edit_branch else {
+        return;
+    };
+    if i >= app.projects_ui.base.branches.len() {
+        app.projects_ui.edit_branch = None;
+        return;
+    }
+    let mut open = true;
+    let mut remove = false;
+    kit::modal(
+        ui,
+        ui.make_persistent_id("branch_modal"),
+        &mut open,
+        Vec2::new(px(440.0), px(330.0)),
+        s,
+        |ui| {
+            let d = ui.max_rect();
+            let x = d.left() + px(26.0);
+            let w = d.width() - px(52.0);
+            ui.painter().text(
+                Pos2::new(x, d.top() + px(30.0)),
+                Align2::LEFT_CENTER,
+                "Edit branch",
+                FontId::new(px(15.0), theme::family_semibold()),
+                theme::INK,
+            );
+            kit::label(ui.painter(), Pos2::new(x, d.top() + px(58.0)), "Name", s);
+            Input::new(&mut app.projects_ui.base.branches[i].name)
+                .hint("branch name")
+                .show(
+                    ui,
+                    Rect::from_min_size(Pos2::new(x, d.top() + px(78.0)), Vec2::new(w, px(38.0))),
+                    s,
+                );
+            kit::label(ui.painter(), Pos2::new(x, d.top() + px(128.0)), "Level", s);
+            let mut lvl = match app.projects_ui.base.branches[i].level {
+                BranchLevel::Dev => 0,
+                BranchLevel::Beta => 1,
+                BranchLevel::Live => 2,
+            };
+            kit::dropdown(
+                ui,
+                Rect::from_min_size(Pos2::new(x, d.top() + px(148.0)), Vec2::new(w, px(38.0))),
+                &["Dev", "Beta", "Live"],
+                &mut lvl,
+                s,
+            );
+            app.projects_ui.base.branches[i].level =
+                [BranchLevel::Dev, BranchLevel::Beta, BranchLevel::Live][lvl];
+
+            let name = app.projects_ui.base.branches[i].name.clone();
+            let mut live = !name.is_empty()
+                && app.projects_ui.base.set_live_branch.eq_ignore_ascii_case(&name);
+            let tog = Rect::from_min_size(Pos2::new(x, d.top() + px(204.0)), Vec2::new(px(44.0), px(24.0)));
+            if kit::toggle(ui, tog, &mut live, s).changed() {
+                app.projects_ui.base.set_live_branch = if live { name.clone() } else { String::new() };
+            }
+            let (text, color) = if live && name.eq_ignore_ascii_case("default") {
+                ("SteamCMD cannot set the default branch live", theme::DANGER)
+            } else {
+                ("Set this branch live after upload", theme::INK_DIM)
+            };
+            ui.painter().text(
+                Pos2::new(tog.right() + px(12.0), tog.center().y),
+                Align2::LEFT_CENTER,
+                text,
+                FontId::new(px(12.5), theme::family_medium()),
+                color,
+            );
+
+            let by = d.bottom() - px(26.0) - px(38.0);
+            if Button::new("Remove", ButtonKind::Danger)
+                .icon(theme::icon::TRASH)
+                .show(ui, Rect::from_min_size(Pos2::new(x, by), Vec2::new(px(120.0), px(38.0))), s)
+                .clicked()
+            {
+                remove = true;
+                return true;
+            }
+            Button::new("Done", ButtonKind::Primary)
+                .show(
+                    ui,
+                    Rect::from_min_size(Pos2::new(x + w - px(120.0), by), Vec2::new(px(120.0), px(38.0))),
+                    s,
+                )
+                .clicked()
+        },
+    );
+    if remove {
+        app.projects_ui.remove_branch(i);
+    }
+    if !open || remove {
+        app.projects_ui.edit_branch = None;
     }
 }

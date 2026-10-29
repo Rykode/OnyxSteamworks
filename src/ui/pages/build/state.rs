@@ -25,6 +25,7 @@ pub const OPTIONS: [&str; 3] = ["Set live", "Verbose", "Validate"];
 pub struct LogLine {
     pub text: String,
     pub error: bool,
+    pub time: String,
 }
 
 pub struct BuildState {
@@ -52,6 +53,7 @@ pub struct BuildState {
     pub speed: super::speed::SpeedTracker,
     pub guard: super::guard::GuardState,
     pub snapshot: Option<Project>,
+    pub stage_marks: Vec<(Stage, Instant)>,
     pub(super) interactive: bool,
     pub(super) run_project: Option<Project>,
     pub(super) run_branch: String,
@@ -99,6 +101,7 @@ impl BuildState {
             run_desc: String::new(),
             run_preview: false,
             snapshot: None,
+            stage_marks: Vec::new(),
             log_path: None,
             started: None,
             finished_elapsed: None,
@@ -113,6 +116,7 @@ impl BuildState {
         self.log.push_back(LogLine {
             text: text.into(),
             error,
+            time: clock(),
         });
         while self.log.len() > MAX_LINES {
             self.log.pop_front();
@@ -146,6 +150,21 @@ impl BuildState {
         }
     }
 
+    pub fn stage_time(&self, stage: Stage) -> Option<Duration> {
+        let i = self.stage_marks.iter().position(|(s, _)| *s == stage)?;
+        let start = self.stage_marks[i].1;
+        let end = match self.stage_marks.get(i + 1) {
+            Some((_, t)) => *t,
+            None if self.running => Instant::now(),
+            None => self
+                .started
+                .zip(self.finished_elapsed)
+                .map(|(s, d)| s + d)
+                .unwrap_or(start),
+        };
+        Some(end.saturating_duration_since(start))
+    }
+
     pub fn stage_name(&self) -> &'static str {
         self.stage
             .and_then(|st| STAGES.iter().find(|(s, _)| *s == st).map(|(_, n)| *n))
@@ -167,7 +186,12 @@ impl BuildState {
                     let error = lower.contains("error") || lower.contains("failed");
                     self.push_log(s, error);
                 }
-                BuildEvent::Stage(st) => self.stage = Some(st),
+                BuildEvent::Stage(st) => {
+                    self.stage = Some(st);
+                    if self.stage_marks.last().map(|(s, _)| *s) != Some(st) {
+                        self.stage_marks.push((st, Instant::now()));
+                    }
+                }
                 BuildEvent::Progress(f) => {
                     self.progress = f.clamp(0.0, 1.0);
                     self.speed.record(self.progress, self.started);
@@ -276,4 +300,14 @@ impl BuildState {
             self.push_log("Cancelling...", false);
         }
     }
+}
+
+fn clock() -> String {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0);
+    let local = now + crate::features::schedule::local_offset_ms(now);
+    let secs = local.div_euclid(1000).rem_euclid(86_400);
+    format!("{:02}:{:02}:{:02}", secs / 3600, secs / 60 % 60, secs % 60)
 }

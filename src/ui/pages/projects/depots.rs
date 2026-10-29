@@ -1,4 +1,6 @@
-use eframe::egui::{self, Align2, FontId, Pos2, Rect, Vec2};
+use eframe::egui::{self, Align2, FontId, Pos2, Rect, Stroke, Vec2};
+
+use crate::features::importer::classify_os;
 
 use super::editor::row;
 use super::scan::{ScanState, human_size};
@@ -7,7 +9,7 @@ use crate::app::App;
 use crate::model::Depot;
 use crate::ui::kit::{Button, ButtonKind, Input};
 use crate::ui::theme;
-use crate::ui::{anim, kit};
+use crate::ui::kit;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Preset {
@@ -39,172 +41,290 @@ enum DepotAct {
     RemoveExcl(usize, usize),
 }
 
-pub(super) fn sections(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context) {
-    depot_section(app, ui, s, ctx);
-    super::branches::branch_section(app, ui, s);
-}
-
-pub(super) fn header_row(ui: &mut egui::Ui, title: &str, s: f32) -> Rect {
+pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &egui::Context) {
     let px = |v: f32| theme::px(v, s);
-    ui.add_space(px(10.0));
-    let hr = row(ui, s, 34.0);
-    kit::separator(
-        &ui.painter().clone(),
-        Pos2::new(hr.left(), hr.top()),
-        Pos2::new(hr.right(), hr.top()),
+    kit::card_title(ui.painter(), card, "Depots", s);
+    let add = kit::link(
+        ui,
+        Pos2::new(card.right() - px(20.0), card.top() + px(26.0)),
+        Align2::RIGHT_CENTER,
+        "+ Add depot",
+        theme::INK_FAINT,
+        s,
     );
-    ui.painter().text(
-        Pos2::new(hr.left(), hr.center().y + px(2.0)),
-        Align2::LEFT_CENTER,
-        title,
-        FontId::new(px(13.0), theme::family_semibold()),
-        theme::INK,
-    );
-    hr
-}
+    egui::Popup::menu(&add).show(|ui| {
+        for (lbl, preset) in [
+            ("Windows", Some(Preset::Windows)),
+            ("Linux", Some(Preset::Linux)),
+            ("macOS", Some(Preset::Macos)),
+            ("Empty", None),
+        ] {
+            if ui.button(lbl).clicked() {
+                app.projects_ui
+                    .add_depot(preset.map(preset_depot).unwrap_or_default());
+                app.projects_ui.edit_depot = Some(app.projects_ui.base.depots.len() - 1);
+            }
+        }
+    });
 
-fn collapsible_title(
-    ui: &mut egui::Ui,
-    hr: Rect,
-    right: f32,
-    title: &str,
-    count: usize,
-    open: bool,
-    s: f32,
-) -> bool {
-    let px = |v: f32| theme::px(v, s);
-    let hit = Rect::from_min_max(
-        Pos2::new(hr.left() - px(6.0), hr.top() + px(4.0)),
-        Pos2::new(right - px(12.0), hr.bottom()),
+    let area = Rect::from_min_max(
+        Pos2::new(card.left(), card.top() + px(44.0)),
+        Pos2::new(card.right(), card.bottom() - px(8.0)),
     );
-    let id = ui.make_persistent_id(("collapsible", title));
-    let resp = ui
-        .interact(hit, id, egui::Sense::click())
-        .on_hover_cursor(egui::CursorIcon::PointingHand);
-    let hover = anim::anim_bool(
-        ui.ctx(),
-        id.with("h"),
-        resp.hovered(),
-        0.12,
-        anim::ease_out_cubic,
-    );
-    let turn = anim::anim_bool(ui.ctx(), id.with("o"), open, 0.16, anim::ease_out_cubic);
-    let painter = ui.painter();
-    let cy = hr.center().y + px(2.0);
-    let galley = painter.layout_no_wrap(
-        kit::rail::CARET_RIGHT.to_string(),
-        theme::icon_font(px(11.0), true),
-        theme::lerp_color(theme::INK_MUTED, theme::INK, hover),
-    );
-    let angle = turn * std::f32::consts::FRAC_PI_2;
-    let half = galley.size() / 2.0;
-    let center = Pos2::new(hr.left() + px(6.0), cy);
-    let pos = center - egui::emath::Rot2::from_angle(angle) * half;
-    painter.add(egui::epaint::TextShape::new(pos, galley, theme::INK).with_angle(angle));
-    let title_r = painter.text(
-        Pos2::new(hr.left() + px(18.0), cy),
-        Align2::LEFT_CENTER,
-        title,
-        FontId::new(px(13.0), theme::family_semibold()),
-        theme::INK,
-    );
-    let font = FontId::new(px(11.0), theme::family_medium());
-    let label = count.to_string();
-    let w = painter
-        .layout_no_wrap(label.clone(), font.clone(), theme::INK_MUTED)
-        .size()
-        .x;
-    let badge = Rect::from_min_size(
-        Pos2::new(title_r.right() + px(8.0), cy - px(9.0)),
-        Vec2::new(w + px(12.0), px(18.0)),
-    );
-    painter.rect_filled(badge, theme::corner(badge.height() / 2.0), theme::FIELD_HI);
-    painter.text(
-        badge.center(),
-        Align2::CENTER_CENTER,
-        label,
-        font,
-        theme::INK_MUTED,
-    );
-    resp.clicked()
-}
+    let n_depots = app.projects_ui.base.depots.len();
+    let n_branches = app.projects_ui.base.branches.len();
+    const ROW: f32 = 46.7;
+    let table_h = 32.0 + ROW * n_depots.max(1) as f32;
+    let branches_h = 50.0 + 52.0 * n_branches.max(1) as f32;
+    let mut cui = ui.new_child(egui::UiBuilder::new().max_rect(area));
+    egui::ScrollArea::vertical()
+        .id_salt("depots_card")
+        .auto_shrink([false, false])
+        .show(&mut cui, |ui| {
+            let (r, _) = ui.allocate_exact_size(
+                Vec2::new(area.width(), px(table_h + branches_h)),
+                egui::Sense::hover(),
+            );
+            let top = r.top() - px(44.0);
+            let x0 = r.left() + px(21.0);
+            let x1 = r.right() - px(21.0);
+            let cols = [25.0 / 488.0, 137.0 / 488.0, 243.0 / 488.0, 369.0 / 488.0];
+            let cx = |i: usize| r.left() + r.width() * cols[i];
+            for (i, title) in ["Depot", "Path", "Target", "Ignore"].iter().enumerate() {
+                kit::caps(
+                    ui.painter(),
+                    Pos2::new(cx(i), top + px(57.0)),
+                    Align2::LEFT_CENTER,
+                    title,
+                    11.5,
+                    theme::INK_FAINT,
+                    s,
+                );
+            }
+            let sep = |y: f32| {
+                ui.painter().line_segment(
+                    [Pos2::new(x0, y), Pos2::new(x1, y)],
+                    Stroke::new(1.0, theme::LINE_SOFT),
+                )
+            };
+            let mut y = top + px(76.0);
+            sep(y);
+            if n_depots == 0 {
+                ui.painter().text(
+                    Pos2::new(cx(0), y + px(ROW / 2.0)),
+                    Align2::LEFT_CENTER,
+                    "No depots yet. Add one above.",
+                    FontId::new(px(13.0), theme::family_medium()),
+                    theme::INK_FAINT,
+                );
+                y += px(ROW);
+            }
+            let root = crate::features::maintenance::resolve(&app.projects_ui.project()).content_root;
+            for i in 0..n_depots {
+                let row = Rect::from_min_max(Pos2::new(x0 - px(6.0), y), Pos2::new(x1 + px(6.0), y + px(ROW)));
+                let resp = ui
+                    .interact(row, ui.make_persistent_id(("depot_row", i)), egui::Sense::click())
+                    .on_hover_cursor(egui::CursorIcon::PointingHand);
+                if resp.hovered() {
+                    ui.painter().rect_filled(
+                        row.shrink2(Vec2::new(0.0, px(3.0))),
+                        theme::corner(px(8.0)),
+                        theme::with_alpha(theme::SURFACE_2, 200),
+                    );
+                }
+                if resp.clicked() {
+                    app.projects_ui.edit_depot = Some(i);
+                }
+                let d = &app.projects_ui.base.depots[i];
+                let cy = row.center().y;
+                let mono = |size: f32| FontId::new(px(size), egui::FontFamily::Monospace);
+                let cell = |i: usize| {
+                    Rect::from_min_max(
+                        Pos2::new(cx(i), row.top()),
+                        Pos2::new(if i < 3 { cx(i + 1) - px(10.0) } else { x1 }, row.bottom()),
+                    )
+                };
+                let id = if d.depot_id.is_empty() { "-" } else { d.depot_id.as_str() };
+                ui.painter().with_clip_rect(cell(0)).text(
+                    Pos2::new(cx(0), cy),
+                    Align2::LEFT_CENTER,
+                    id,
+                    mono(13.0),
+                    theme::INK,
+                );
+                ui.painter().with_clip_rect(cell(1)).text(
+                    Pos2::new(cx(1), cy),
+                    Align2::LEFT_CENTER,
+                    depot_path_label(&root, d),
+                    mono(13.0),
+                    theme::INK_DIM,
+                );
+                let target = classify_os(&d.name)
+                    .or_else(|| classify_os(&d.local_path.to_string_lossy()))
+                    .map(|o| o.label())
+                    .unwrap_or("Any");
+                kit::tag(ui.painter(), Pos2::new(cx(2), cy), Align2::LEFT_CENTER, target, s);
+                let ignore = d
+                    .exclusions
+                    .iter()
+                    .filter(|e| !e.trim().is_empty())
+                    .map(|e| if e.starts_with('.') { format!("*{e}") } else { e.clone() })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                ui.painter().with_clip_rect(cell(3)).text(
+                    Pos2::new(cx(3), cy),
+                    Align2::LEFT_CENTER,
+                    if ignore.is_empty() { "-".to_string() } else { ignore },
+                    mono(12.0),
+                    theme::INK_MUTED,
+                );
+                y += px(ROW);
+                if i + 1 < n_depots {
+                    sep(y);
+                }
+            }
 
-fn depot_section(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context) {
-    let px = |v: f32| theme::px(v, s);
-    ui.add_space(px(14.0));
-    let hr = header_row(ui, "", s);
-    let bw = px(86.0);
-    let presets = [
-        ("+ Windows", Some(Preset::Windows)),
-        ("+ Linux", Some(Preset::Linux)),
-        ("+ macOS", Some(Preset::Macos)),
-        ("+ Empty", None),
-    ];
-    let buttons_left = hr.right() - bw * 4.0 - px(6.0) * 3.0;
-    let open_id = ui.make_persistent_id("depots_open");
-    let mut open = ctx.data(|d| d.get_temp::<bool>(open_id).unwrap_or(true));
-    let count = app.projects_ui.base.depots.len();
-    if collapsible_title(ui, hr, buttons_left, "Depots", count, open, s) {
-        open = !open;
-    }
-    for (k, (lbl, preset)) in presets.iter().enumerate() {
-        let r = Rect::from_min_size(
-            Pos2::new(
-                hr.right() - bw * (4 - k) as f32 - px(6.0) * (3 - k) as f32,
-                hr.center().y - px(15.0),
-            ),
-            Vec2::new(bw, px(30.0)),
-        );
-        if Button::new(lbl, ButtonKind::Secondary)
-            .show(ui, r, s)
+            let title_y = y + px(23.5);
+            kit::caps(
+                ui.painter(),
+                Pos2::new(x0, title_y),
+                Align2::LEFT_CENTER,
+                "Branches",
+                12.5,
+                theme::INK_MUTED,
+                s,
+            );
+            if kit::link(
+                ui,
+                Pos2::new(x1, title_y),
+                Align2::RIGHT_CENTER,
+                "+ Add branch",
+                theme::INK_FAINT,
+                s,
+            )
             .clicked()
-        {
-            app.projects_ui
-                .add_depot(preset.map(preset_depot).unwrap_or_default());
-            open = true;
-        }
-    }
-    ctx.data_mut(|d| d.insert_temp(open_id, open));
-    if !open {
-        return;
-    }
-
-    if app.projects_ui.base.depots.is_empty() {
-        let r = row(ui, s, 26.0);
-        ui.painter().text(
-            r.left_top(),
-            Align2::LEFT_TOP,
-            "No depots. Add one from a preset above.",
-            FontId::new(px(12.0), theme::family_medium()),
-            theme::INK_MUTED,
-        );
-    }
-
-    let mut act = None;
-    for i in 0..app.projects_ui.base.depots.len() {
-        if let Some(a) = depot_card(app, ui, s, ctx, i) {
-            act = Some(a);
-        }
-        ui.add_space(px(10.0));
-    }
-    match act {
-        Some(DepotAct::Move(i, up)) => app.projects_ui.move_depot(i, up),
-        Some(DepotAct::Remove(i)) => app.projects_ui.remove_depot(i),
-        Some(DepotAct::Scan(i)) => app.projects_ui.scan_depot(ctx, i),
-        Some(DepotAct::AddExcl(i)) => {
-            if let Some(d) = app.projects_ui.base.depots.get_mut(i) {
-                d.exclusions.push(String::new());
-            }
-        }
-        Some(DepotAct::RemoveExcl(i, j)) => {
-            if let Some(d) = app.projects_ui.base.depots.get_mut(i)
-                && j < d.exclusions.len()
             {
-                d.exclusions.remove(j);
+                app.projects_ui.add_branch();
+                app.projects_ui.edit_branch = Some(app.projects_ui.base.branches.len() - 1);
             }
-        }
-        None => {}
+            let builds = super::branches::latest_builds(app);
+            let mut by = title_y + px(21.5);
+            if n_branches == 0 {
+                ui.painter().text(
+                    Pos2::new(x0, by + px(21.0)),
+                    Align2::LEFT_CENTER,
+                    "No branches yet.",
+                    FontId::new(px(13.0), theme::family_medium()),
+                    theme::INK_FAINT,
+                );
+            }
+            for i in 0..n_branches {
+                let row = Rect::from_min_max(Pos2::new(x0, by), Pos2::new(x1, by + px(42.0)));
+                if super::branches::row(app, ui, row, i, &builds, s) {
+                    app.projects_ui.edit_branch = Some(i);
+                }
+                by += px(52.0);
+            }
+        });
+    let _ = ctx;
+}
+
+fn depot_path_label(root: &std::path::Path, d: &Depot) -> String {
+    if d.local_path.as_os_str().is_empty() {
+        return "-".to_string();
     }
+    let rel = d
+        .local_path
+        .strip_prefix(root)
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|_| {
+            d.local_path
+                .file_name()
+                .map(std::path::PathBuf::from)
+                .unwrap_or_else(|| d.local_path.clone())
+        });
+    let mut text = rel.to_string_lossy().to_string();
+    if text.is_empty() {
+        text = ".".to_string();
+    }
+    if !text.ends_with(std::path::MAIN_SEPARATOR) && text != "." {
+        text.push(std::path::MAIN_SEPARATOR);
+    }
+    text
+}
+
+pub(super) fn modals(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context) {
+    let px = |v: f32| theme::px(v, s);
+    if let Some(i) = app.projects_ui.edit_depot {
+        if i >= app.projects_ui.base.depots.len() {
+            app.projects_ui.edit_depot = None;
+            return;
+        }
+        let mut open = true;
+        let mut act = None;
+        kit::modal(
+            ui,
+            ui.make_persistent_id("depot_modal"),
+            &mut open,
+            Vec2::new(px(640.0), px(520.0)),
+            s,
+            |ui| {
+                let d = ui.max_rect();
+                ui.painter().text(
+                    Pos2::new(d.left() + px(26.0), d.top() + px(30.0)),
+                    Align2::LEFT_CENTER,
+                    "Edit depot",
+                    FontId::new(px(15.0), theme::family_semibold()),
+                    theme::INK,
+                );
+                let body = Rect::from_min_max(
+                    Pos2::new(d.left() + px(26.0), d.top() + px(56.0)),
+                    Pos2::new(d.right() - px(26.0), d.bottom() - px(76.0)),
+                );
+                let mut cui = ui.new_child(egui::UiBuilder::new().max_rect(body));
+                egui::ScrollArea::vertical()
+                    .id_salt("depot_modal_scroll")
+                    .auto_shrink([false, false])
+                    .show(&mut cui, |ui| {
+                        ui.set_width(body.width() - px(12.0));
+                        act = depot_card(app, ui, s, ctx, i);
+                    });
+                let done = Rect::from_min_size(
+                    Pos2::new(d.right() - px(26.0) - px(120.0), d.bottom() - px(26.0) - px(38.0)),
+                    Vec2::new(px(120.0), px(38.0)),
+                );
+                Button::new("Done", ButtonKind::Primary).show(ui, done, s).clicked()
+            },
+        );
+        if !open {
+            app.projects_ui.edit_depot = None;
+        }
+        match act {
+            Some(DepotAct::Move(i, up)) => {
+                app.projects_ui.move_depot(i, up);
+                app.projects_ui.edit_depot = Some(if up { i - 1 } else { i + 1 });
+            }
+            Some(DepotAct::Remove(i)) => {
+                app.projects_ui.remove_depot(i);
+                app.projects_ui.edit_depot = None;
+            }
+            Some(DepotAct::Scan(i)) => app.projects_ui.scan_depot(ctx, i),
+            Some(DepotAct::AddExcl(i)) => {
+                if let Some(d) = app.projects_ui.base.depots.get_mut(i) {
+                    d.exclusions.push(String::new());
+                }
+            }
+            Some(DepotAct::RemoveExcl(i, j)) => {
+                if let Some(d) = app.projects_ui.base.depots.get_mut(i)
+                    && j < d.exclusions.len()
+                {
+                    d.exclusions.remove(j);
+                }
+            }
+            None => {}
+        }
+    }
+    super::branches::modal(app, ui, s);
 }
 
 fn depot_card(

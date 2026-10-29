@@ -1,11 +1,11 @@
 use eframe::egui::{
-    self, Align2, Color32, CursorIcon, FontId, Pos2, Rect, ResizeDirection, Sense, Stroke, Vec2,
+    self, Color32, CursorIcon, Pos2, Rect, ResizeDirection, Sense, Stroke, Vec2,
     ViewportCommand,
 };
 
 use crate::ui::{anim, theme};
 
-pub const TITLEBAR_H: f32 = 40.0;
+pub const TITLEBAR_H: f32 = 30.0;
 const BUTTON_W: f32 = 46.0;
 const EDGE: f32 = 6.0;
 const CLOSE_RED: Color32 = Color32::from_rgb(0xC4, 0x2B, 0x1C);
@@ -58,14 +58,6 @@ pub fn titlebar(ui: &mut egui::Ui, rect: Rect, s: f32) {
     } else if drag.drag_started_by(egui::PointerButton::Primary) {
         ctx.send_viewport_cmd(ViewportCommand::StartDrag);
     }
-
-    ui.painter().text(
-        Pos2::new(rect.left() + px(18.0), rect.center().y),
-        Align2::LEFT_CENTER,
-        "Onyx",
-        FontId::new(px(14.0), theme::family_brand()),
-        theme::INK,
-    );
 
     let w = px(BUTTON_W);
     let mut x = rect.right() - w * 3.0;

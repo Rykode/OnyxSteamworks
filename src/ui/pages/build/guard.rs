@@ -127,7 +127,7 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
                 kit::label(
                     &ui.painter().clone(),
                     Pos2::new(x, d.top() + px(90.0)),
-                    "RELEASE CHECKLIST — STILL UNCHECKED",
+                    "RELEASE CHECKLIST: STILL UNCHECKED",
                     s,
                 );
                 for (i, item) in unchecked.iter().take(shown).enumerate() {

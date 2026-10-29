@@ -1,27 +1,40 @@
-use eframe::egui::{self, Align2, FontId, Pos2, Rect, Sense, Stroke, StrokeKind, Vec2};
+use eframe::egui::{
+    self, Align2, Color32, FontFamily, FontId, Pos2, Rect, Sense, Stroke, StrokeKind, Vec2,
+};
 
 use crate::app::Page;
 use crate::ui::{anim, nav, theme};
 
 pub enum RailAction {
     Navigate(Page),
-    SubTab(Page, usize),
     Search,
     Avatar,
 }
 
 pub struct RailState<'a> {
     pub active: Page,
-    pub sub_tabs: &'a [usize],
-    pub avatar: char,
+    pub initials: &'a str,
     pub account: &'a str,
+    pub cached: bool,
+    pub brand_y: f32,
 }
+
+const AVATAR: Color32 = Color32::from_rgb(0x3F, 0x63, 0xC4);
 
 pub fn account_row(rect: Rect, s: f32) -> Rect {
     let px = |v: f32| theme::px(v, s);
     Rect::from_min_max(
-        Pos2::new(rect.left() + px(10.0), rect.bottom() - px(46.0)),
-        Pos2::new(rect.right() - px(10.0), rect.bottom() - px(14.0)),
+        Pos2::new(rect.left(), rect.bottom() - px(50.0)),
+        rect.max,
+    )
+}
+
+fn palette_row(rect: Rect, s: f32) -> Rect {
+    let px = |v: f32| theme::px(v, s);
+    let acct = account_row(rect, s);
+    Rect::from_min_max(
+        Pos2::new(rect.left(), acct.top() - px(11.0) - px(41.0)),
+        Pos2::new(rect.right(), acct.top() - px(11.0)),
     )
 }
 
@@ -30,8 +43,8 @@ fn row_fill(ui: &egui::Ui, row: Rect, active: f32, hover: f32, s: f32) {
         return;
     }
     let fill = theme::lerp_color(
-        theme::with_alpha(theme::FIELD, (hover * 255.0) as u8),
-        theme::FIELD_HI,
+        theme::with_alpha(theme::SURFACE, (hover * 160.0) as u8),
+        theme::SURFACE,
         active,
     );
     let radius = theme::corner(theme::px(theme::RADIUS_FIELD, s));
@@ -40,84 +53,74 @@ fn row_fill(ui: &egui::Ui, row: Rect, active: f32, hover: f32, s: f32) {
         ui.painter().rect_stroke(
             row,
             radius,
-            Stroke::new(1.0, theme::with_alpha(theme::LINE, (active * 255.0) as u8)),
+            Stroke::new(
+                1.0,
+                theme::with_alpha(theme::LINE_SOFT, (active * 255.0) as u8),
+            ),
             StrokeKind::Inside,
         );
     }
+}
+
+pub fn brand(ui: &egui::Ui, left: f32, cy: f32, s: f32) {
+    let px = |v: f32| theme::px(v, s);
+    let painter = ui.painter();
+    let c = Pos2::new(left + px(25.0), cy);
+    let rx = px(12.5);
+    let ry = px(15.0);
+    let top = c - Vec2::new(0.0, ry);
+    let right = c + Vec2::new(rx, 0.0);
+    let bottom = c + Vec2::new(0.0, ry);
+    let left_pt = c - Vec2::new(rx, 0.0);
+    painter.add(egui::Shape::convex_polygon(
+        vec![top, right, bottom, left_pt],
+        Color32::from_rgb(0x1E, 0x20, 0x24),
+        Stroke::NONE,
+    ));
+    painter.add(egui::Shape::convex_polygon(
+        vec![top, right, c, left_pt],
+        Color32::from_rgb(0x34, 0x36, 0x3D),
+        Stroke::NONE,
+    ));
+    painter.add(egui::Shape::convex_polygon(
+        vec![top, c, left_pt],
+        Color32::from_rgb(0x42, 0x44, 0x4B),
+        Stroke::NONE,
+    ));
+    painter.add(egui::Shape::closed_line(
+        vec![top, right, bottom, left_pt],
+        Stroke::new(1.0, Color32::from_rgb(0x4A, 0x4C, 0x53)),
+    ));
+    painter.text(
+        Pos2::new(left + px(50.0), cy),
+        Align2::LEFT_CENTER,
+        "Onyx",
+        FontId::new(px(27.0), theme::family_brand()),
+        theme::INK,
+    );
 }
 
 pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<RailAction> {
     let px = |v: f32| theme::px(v, s);
     let ctx = ui.ctx().clone();
     let mut action = None;
-    let left = rect.left() + px(10.0);
-    let width = rect.width() - px(20.0);
-    let row_h = px(30.0);
 
-    let search = Rect::from_min_size(
-        Pos2::new(left, rect.top() + px(12.0)),
-        Vec2::new(width, row_h),
-    );
-    let sid = ui.make_persistent_id("search_pill");
-    let sresp = ui.interact(search, sid, Sense::click());
-    let shover = anim::anim_bool(&ctx, sid, sresp.hovered(), 0.12, anim::ease_out_cubic);
-    ui.painter().rect_filled(
-        search,
-        theme::corner(px(theme::RADIUS_FIELD)),
-        theme::lerp_color(theme::SURFACE_2, theme::FIELD_HI, shover),
-    );
-    ui.painter().rect_stroke(
-        search,
-        theme::corner(px(theme::RADIUS_FIELD)),
-        Stroke::new(1.0, theme::LINE_SOFT),
-        StrokeKind::Inside,
-    );
-    ui.painter().text(
-        Pos2::new(search.left() + px(18.0), search.center().y),
-        Align2::CENTER_CENTER,
-        theme::icon::MAGNIFYING_GLASS.to_string(),
-        theme::icon_font(px(14.0), false),
-        theme::INK_MUTED,
-    );
-    ui.painter().text(
-        Pos2::new(search.left() + px(32.0), search.center().y),
-        Align2::LEFT_CENTER,
-        "Search",
-        FontId::new(px(13.0), theme::family_medium()),
-        theme::lerp_color(theme::INK_MUTED, theme::INK_DIM, shover),
-    );
-    kbd(
-        ui,
-        Pos2::new(search.right() - px(8.0), search.center().y),
-        "Ctrl K",
-        s,
-    );
-    if sresp.clicked() {
-        action = Some(RailAction::Search);
-    }
+    brand(ui, rect.left(), st.brand_y, s);
 
-    ui.painter().text(
-        Pos2::new(left + px(8.0), search.bottom() + px(22.0)),
-        Align2::LEFT_CENTER,
-        "Workspace",
-        FontId::new(px(12.0), theme::family_medium()),
-        theme::INK_FAINT,
-    );
-
-    let mut y = search.bottom() + px(34.0);
-    for (i, item) in nav::ITEMS.iter().enumerate() {
-        let row = Rect::from_min_size(Pos2::new(left, y), Vec2::new(width, row_h));
+    let row_h = px(42.0);
+    let mut y = st.brand_y + px(50.0);
+    for item in nav::ITEMS.iter() {
+        let row = Rect::from_min_size(Pos2::new(rect.left(), y), Vec2::new(rect.width(), row_h));
         let id = ui.make_persistent_id(("rail_slot", item.page));
         let resp = ui.interact(row, id, Sense::click());
         let is_active = item.page == st.active;
-        let has_subs = !item.sub_tabs.is_empty();
         if resp.clicked() {
             action = Some(RailAction::Navigate(item.page));
         }
         let t = anim::anim_bool(
             &ctx,
             id.with("active"),
-            is_active && !has_subs,
+            is_active,
             0.16,
             anim::ease_out_cubic,
         );
@@ -129,151 +132,117 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
             anim::ease_out_cubic,
         );
         row_fill(ui, row, t, hover, s);
-        let col = if is_active {
-            theme::INK
-        } else {
-            theme::lerp_color(theme::INK_MUTED, theme::INK_DIM, hover)
-        };
         ui.painter().text(
-            Pos2::new(row.left() + px(18.0), row.center().y),
+            Pos2::new(row.left() + px(21.5), row.center().y),
             Align2::CENTER_CENTER,
             item.glyph.to_string(),
-            theme::icon_font(px(16.0), is_active),
-            if is_active {
-                theme::ACCENT
-            } else {
-                theme::INK_MUTED
-            },
+            theme::icon_font(px(18.0), false),
+            theme::lerp_color(
+                theme::lerp_color(theme::INK_MUTED, theme::INK_DIM, hover),
+                theme::ACCENT_HI,
+                t,
+            ),
         );
         ui.painter().text(
-            Pos2::new(row.left() + px(34.0), row.center().y),
+            Pos2::new(row.left() + px(44.0), row.center().y),
             Align2::LEFT_CENTER,
             item.label,
-            FontId::new(px(13.0), theme::family_medium()),
-            col,
+            FontId::new(px(15.5), theme::family_medium()),
+            theme::lerp_color(
+                theme::lerp_color(theme::INK_DIM, theme::INK, hover),
+                theme::INK,
+                t,
+            ),
         );
-        if has_subs {
-            let open =
-                anim::anim_bool(&ctx, id.with("open"), is_active, 0.18, anim::ease_out_cubic);
-            ui.painter().text(
-                Pos2::new(row.right() - px(12.0), row.center().y),
-                Align2::CENTER_CENTER,
-                if open > 0.5 {
-                    theme::icon::CARET_DOWN
-                } else {
-                    CARET_RIGHT
-                }
-                .to_string(),
-                theme::icon_font(px(10.0), true),
-                theme::with_alpha(theme::INK_FAINT, (80.0 + 175.0 * hover.max(open)) as u8),
-            );
-            y += row_h + px(2.0);
-            if open > 0.01 {
-                let sub_h = px(28.0);
-                let block_h = (sub_h + px(2.0)) * item.sub_tabs.len() as f32 * open;
-                let guide_x = row.left() + px(18.0);
-                ui.painter().line_segment(
-                    [
-                        Pos2::new(guide_x, y + px(2.0)),
-                        Pos2::new(guide_x, y + block_h - px(4.0)),
-                    ],
-                    Stroke::new(1.0, theme::with_alpha(theme::LINE, (255.0 * open) as u8)),
-                );
-                for (ti, tab) in item.sub_tabs.iter().enumerate() {
-                    let sub = Rect::from_min_size(
-                        Pos2::new(left + px(28.0), y),
-                        Vec2::new(width - px(28.0), sub_h),
-                    );
-                    let sid = id.with(("sub", ti));
-                    let on = is_active && st.sub_tabs[i] == ti;
-                    let sresp = ui.interact(sub, sid, Sense::click());
-                    let st_on =
-                        anim::anim_bool(&ctx, sid.with("a"), on, 0.16, anim::ease_out_cubic);
-                    let sh = anim::anim_bool(
-                        &ctx,
-                        sid.with("h"),
-                        sresp.hovered(),
-                        0.1,
-                        anim::ease_out_cubic,
-                    );
-                    let fade = open.clamp(0.0, 1.0);
-                    if fade > 0.6 {
-                        row_fill(ui, sub, st_on, sh, s);
-                    }
-                    let c = if on {
-                        theme::INK
-                    } else {
-                        theme::lerp_color(theme::INK_MUTED, theme::INK_DIM, sh)
-                    };
-                    ui.painter().text(
-                        Pos2::new(sub.left() + px(10.0), sub.center().y),
-                        Align2::LEFT_CENTER,
-                        *tab,
-                        FontId::new(px(13.0), theme::family_medium()),
-                        anim::with_opacity(c, fade),
-                    );
-                    if sresp.clicked() && fade > 0.6 {
-                        action = Some(RailAction::SubTab(item.page, ti));
-                    }
-                    y += (sub_h + px(2.0)) * open;
-                }
-                y += px(4.0) * open;
-            }
-        } else {
-            y += row_h + px(2.0);
-        }
+        ui.painter().text(
+            Pos2::new(row.right() - px(12.0), row.center().y),
+            Align2::RIGHT_CENTER,
+            shortcut_label(item.shortcut),
+            FontId::new(px(10.5), FontFamily::Monospace),
+            theme::INK_FAINT,
+        );
+        y += px(46.0);
+    }
+
+    let search = palette_row(rect, s);
+    let sid = ui.make_persistent_id("search_pill");
+    let sresp = ui.interact(search, sid, Sense::click());
+    let shover = anim::anim_bool(&ctx, sid, sresp.hovered(), 0.12, anim::ease_out_cubic);
+    kit_box(
+        ui,
+        search,
+        theme::lerp_color(theme::FIELD, theme::FIELD_HI, shover),
+        s,
+    );
+    ui.painter().text(
+        Pos2::new(search.left() + px(18.5), search.center().y),
+        Align2::CENTER_CENTER,
+        theme::icon::MAGNIFYING_GLASS.to_string(),
+        theme::icon_font(px(13.0), false),
+        theme::INK_FAINT,
+    );
+    ui.painter().text(
+        Pos2::new(search.left() + px(35.0), search.center().y),
+        Align2::LEFT_CENTER,
+        "Command palette",
+        FontId::new(px(13.0), theme::family_medium()),
+        theme::lerp_color(theme::INK_FAINT, theme::INK_MUTED, shover),
+    );
+    kbd(
+        ui,
+        Pos2::new(search.right() - px(10.0), search.center().y),
+        "Ctrl K",
+        s,
+    );
+    if sresp.clicked() {
+        action = Some(RailAction::Search);
     }
 
     let acct = account_row(rect, s);
-    ui.painter().line_segment(
-        [
-            Pos2::new(rect.left() + px(16.0), acct.top() - px(10.0)),
-            Pos2::new(rect.right() - px(16.0), acct.top() - px(10.0)),
-        ],
-        Stroke::new(1.0, theme::LINE_SOFT),
-    );
     let aid = ui.make_persistent_id("rail_avatar");
     let aresp = ui.interact(acct, aid, Sense::click());
     let ahover = anim::anim_bool(&ctx, aid, aresp.hovered(), 0.12, anim::ease_out_cubic);
-    row_fill(ui, acct, 0.0, ahover, s);
-    let avatar_r = px(11.0);
-    let avatar_c = Pos2::new(acct.left() + px(8.0) + avatar_r, acct.center().y);
-    ui.painter()
-        .circle_filled(avatar_c, avatar_r, theme::with_alpha(theme::ACCENT, 70));
-    ui.painter().circle_stroke(
-        avatar_c,
-        avatar_r,
-        Stroke::new(1.0, theme::with_alpha(theme::ACCENT_HI, 120)),
+    ui.painter().rect_filled(
+        acct,
+        theme::corner(px(theme::RADIUS_FIELD)),
+        theme::lerp_color(theme::SURFACE, theme::SURFACE_2, ahover),
     );
+    let avatar_r = px(15.5);
+    let avatar_c = Pos2::new(acct.left() + px(27.0), acct.center().y);
+    ui.painter().circle_filled(avatar_c, avatar_r, AVATAR);
     ui.painter().text(
         avatar_c,
         Align2::CENTER_CENTER,
-        st.avatar.to_string(),
-        FontId::new(px(11.0), theme::family_semibold()),
+        st.initials,
+        FontId::new(px(12.5), theme::family_bold()),
         theme::INK,
     );
-    let name = if st.account.is_empty() {
-        "No account"
-    } else {
-        st.account
-    };
+    let text_x = acct.left() + px(53.0);
+    let signed_in = !st.account.is_empty();
     ui.painter().text(
-        Pos2::new(avatar_c.x + avatar_r + px(10.0), acct.center().y),
+        Pos2::new(text_x, acct.center().y - px(7.5)),
         Align2::LEFT_CENTER,
-        name,
-        FontId::new(px(13.0), theme::family_medium()),
-        if st.account.is_empty() {
-            theme::INK_MUTED
+        if signed_in { st.account } else { "No account" },
+        FontId::new(px(13.5), theme::family_bold()),
+        if signed_in {
+            theme::INK
         } else {
-            theme::INK_DIM
+            theme::INK_MUTED
         },
     );
+    let (status, status_color) = match (signed_in, st.cached) {
+        (true, true) => ("Cached login", theme::SUCCESS),
+        (true, false) => ("Login required", theme::WARNING),
+        (false, _) => ("Add one in Settings", theme::INK_FAINT),
+    };
+    let dot = Pos2::new(text_x + px(3.0), acct.center().y + px(8.0));
+    ui.painter().circle_filled(dot, px(3.0), status_color);
     ui.painter().text(
-        Pos2::new(acct.right() - px(10.0), acct.center().y),
-        Align2::RIGHT_CENTER,
-        theme::icon::CARET_DOWN.to_string(),
-        theme::icon_font(px(11.0), false),
-        theme::INK_FAINT,
+        Pos2::new(text_x + px(11.0), dot.y),
+        Align2::LEFT_CENTER,
+        status,
+        FontId::new(px(11.5), theme::family_medium()),
+        status_color,
     );
     if aresp.clicked() {
         action = Some(RailAction::Avatar);
@@ -282,28 +251,47 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
     action
 }
 
+fn kit_box(ui: &egui::Ui, r: Rect, fill: Color32, s: f32) {
+    let radius = theme::corner(theme::px(theme::RADIUS_FIELD, s));
+    ui.painter().rect_filled(r, radius, fill);
+    ui.painter().rect_stroke(
+        r,
+        radius,
+        Stroke::new(1.0, theme::LINE_SOFT),
+        StrokeKind::Inside,
+    );
+}
+
+fn shortcut_label(key: egui::Key) -> String {
+    format!("Ctrl {}", key.symbol_or_name())
+}
+
 pub const CARET_RIGHT: char = '\u{e13a}';
 
 pub fn kbd(ui: &egui::Ui, right: Pos2, text: &str, s: f32) -> Rect {
     let px = |v: f32| theme::px(v, s);
-    let font = FontId::new(px(11.0), theme::family_medium());
+    let font = FontId::new(px(10.5), FontFamily::Monospace);
     let w = ui
         .painter()
-        .layout_no_wrap(text.to_owned(), font.clone(), theme::INK_MUTED)
+        .layout_no_wrap(text.to_owned(), font.clone(), theme::INK_FAINT)
         .size()
         .x;
     let r = Rect::from_min_max(
         Pos2::new(right.x - w - px(12.0), right.y - px(9.0)),
         Pos2::new(right.x, right.y + px(9.0)),
     );
-    ui.painter()
-        .rect_filled(r, theme::corner(px(4.0)), theme::FIELD_HI);
+    ui.painter().rect_stroke(
+        r,
+        theme::corner(px(4.0)),
+        Stroke::new(1.0, theme::LINE),
+        StrokeKind::Inside,
+    );
     ui.painter().text(
         r.center(),
         Align2::CENTER_CENTER,
         text,
         font,
-        theme::INK_MUTED,
+        theme::INK_FAINT,
     );
     r
 }

@@ -86,6 +86,7 @@ impl BuildState {
         self.pending_prompt = None;
         self.prompt_input.clear();
         self.started = Some(Instant::now());
+        self.stage_marks.clear();
         self.finished_elapsed = None;
         self.running = true;
         self.speed.reset();

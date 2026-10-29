@@ -2,14 +2,10 @@ use std::sync::mpsc::{Receiver, Sender, channel};
 
 use eframe::egui;
 
-use eframe::egui::{Pos2, Rect, Vec2};
-
-use super::Action;
 use crate::app::App;
 use crate::config;
 use crate::model::Project;
-use crate::ui::kit::{self, Button, ButtonKind};
-use crate::ui::theme;
+use crate::ui::kit;
 
 pub enum IoResult {
     Imported(Box<Project>),
@@ -95,92 +91,6 @@ impl ProjectIo {
             }
         });
     }
-}
-
-pub(super) fn toolbar(
-    app: &mut App,
-    ui: &mut eframe::egui::Ui,
-    rect: Rect,
-    s: f32,
-) -> (Option<Action>, f32) {
-    let px = |v: f32| theme::px(v, s);
-    let row_y = rect.top() + px(30.0);
-    let bw = (rect.width() - px(16.0)) / 3.0;
-    let has_sel = app.projects_ui.selected.is_some() && app.projects_ui.on_disk;
-    let mut action = None;
-
-    if Button::new("New", ButtonKind::Primary)
-        .icon(theme::icon::PLUS)
-        .show(
-            ui,
-            Rect::from_min_size(Pos2::new(rect.left(), row_y), Vec2::new(bw, px(36.0))),
-            s,
-        )
-        .clicked()
-    {
-        action = Some(Action::New);
-    }
-    if Button::new("Dup", ButtonKind::Secondary)
-        .enabled(has_sel)
-        .show(
-            ui,
-            Rect::from_min_size(
-                Pos2::new(rect.left() + bw + px(8.0), row_y),
-                Vec2::new(bw, px(36.0)),
-            ),
-            s,
-        )
-        .clicked()
-        && has_sel
-    {
-        action = Some(Action::Duplicate);
-    }
-    if Button::new("Del", ButtonKind::Danger)
-        .enabled(has_sel)
-        .show(
-            ui,
-            Rect::from_min_size(
-                Pos2::new(rect.left() + (bw + px(8.0)) * 2.0, row_y),
-                Vec2::new(bw, px(36.0)),
-            ),
-            s,
-        )
-        .clicked()
-        && has_sel
-    {
-        action = Some(Action::Delete);
-    }
-
-    let io_y = row_y + px(44.0);
-    let iw = (rect.width() - px(8.0)) / 2.0;
-    if Button::new("Import", ButtonKind::Secondary)
-        .icon(theme::icon::DOWNLOAD)
-        .show(
-            ui,
-            Rect::from_min_size(Pos2::new(rect.left(), io_y), Vec2::new(iw, px(34.0))),
-            s,
-        )
-        .clicked()
-    {
-        action = Some(Action::Import);
-    }
-    if Button::new("Export", ButtonKind::Secondary)
-        .icon(theme::icon::UPLOAD)
-        .enabled(has_sel)
-        .show(
-            ui,
-            Rect::from_min_size(
-                Pos2::new(rect.left() + iw + px(8.0), io_y),
-                Vec2::new(iw, px(34.0)),
-            ),
-            s,
-        )
-        .clicked()
-        && has_sel
-    {
-        action = Some(Action::Export);
-    }
-    (action, io_y + px(46.0))
 }
 
 pub(super) fn handle(app: &mut App, res: IoResult) {

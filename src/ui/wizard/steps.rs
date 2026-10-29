@@ -310,7 +310,7 @@ fn finish(ui: &mut egui::Ui, rect: Rect, view: &View, s: f32) {
         ui,
         Pos2::new(x, y),
         w,
-        "You're set. We recommend a preview build first — it validates the whole setup with Steam without publishing anything to players.",
+        "You're set. We recommend a preview build first, it validates the whole setup with Steam without publishing anything to players.",
         theme::INK_DIM,
         s,
     );

@@ -96,7 +96,7 @@ pub fn check_steamcmd(project: Option<Project>) -> CheckResult {
                 .find(|l| !l.trim().is_empty())
                 .unwrap_or("ran cleanly")
                 .trim();
-            CheckResult::new("SteamCMD", Status::Ok, format!("Ran OK — {version}"))
+            CheckResult::new("SteamCMD", Status::Ok, format!("Ran OK ({version})"))
         }
         Some((code, _)) => {
             CheckResult::new("SteamCMD", Status::Warn, format!("Exited with code {code}"))
@@ -320,7 +320,7 @@ pub fn diagnostics_report(username: &str, results: &[CheckResult]) -> String {
     out.push_str("\n--- Checks ---\n");
     for r in results {
         out.push_str(&format!(
-            "[{}] {} — {}\n",
+            "[{}] {}: {}\n",
             r.status.label(),
             r.title,
             r.message

@@ -1,14 +1,11 @@
-# Rust / Cargo build output
 /target/
 **/*.rs.bk
 *.pdb
 
-# Profiling and debug artifacts
 flamegraph.svg
 perf.data*
 *.profraw
 
-# Editors and IDEs
 .idea/
 .vscode/*
 !.vscode/settings.json
@@ -17,18 +14,14 @@ perf.data*
 *.swo
 *~
 
-# OS files
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Environment and secrets
 .env
 .env.*
 !.env.example
 
-# eframe web build output (if you add a wasm target later)
 /dist/
 
-# Personal project files (not committed)
 /.personal/

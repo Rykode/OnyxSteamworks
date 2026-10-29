@@ -46,6 +46,7 @@ pub struct App {
     pub(crate) confirm_quit: bool,
     pub(crate) quitting: bool,
     pub(crate) toasts: kit::Toasts,
+    login_status: (String, f64, bool),
 }
 
 impl App {
@@ -104,6 +105,7 @@ impl App {
             confirm_quit: false,
             quitting: false,
             toasts: kit::Toasts::default(),
+            login_status: (String::new(), f64::NEG_INFINITY, false),
         }
     }
 
@@ -134,64 +136,96 @@ impl App {
         pages::render(self, &mut cu, page, lay);
     }
 
-    fn header_bar(&self, ui: &mut egui::Ui, lay: &Layout) {
+    fn header_bar(&mut self, ui: &mut egui::Ui, lay: &Layout) {
         let s = lay.scale;
         let px = |v: f32| theme::px(v, s);
         let h = lay.header;
-        let painter = ui.painter();
+        let idx = nav::index(self.page);
         let item = nav::item(self.page);
-        let mut x = h.left() + px(20.0);
-        painter.text(
-            Pos2::new(x + px(7.0), h.center().y),
-            Align2::CENTER_CENTER,
-            item.glyph.to_string(),
-            theme::icon_font(px(15.0), false),
-            theme::INK_MUTED,
-        );
-        x += px(24.0);
-        let crumb = FontId::new(px(13.0), theme::family_medium());
-        let title = FontId::new(px(24.0), theme::family_bold());
-        let sub = item
-            .sub_tabs
-            .get(self.sub_tabs[nav::index(self.page)])
-            .copied();
-        let page_color = if sub.is_some() {
-            theme::INK_MUTED
-        } else {
-            theme::INK
-        };
-        let r = painter.text(
-            Pos2::new(x, h.center().y),
+        let title = ui.painter().text(
+            Pos2::new(h.left(), h.center().y),
             Align2::LEFT_CENTER,
-            item.label.to_uppercase(),
-            title,
-            page_color,
+            item.label,
+            FontId::new(px(28.0), theme::family_semibold()),
+            theme::INK,
         );
-        if let Some(sub) = sub {
-            let chevron = painter.text(
-                Pos2::new(r.right() + px(8.0), h.center().y),
-                Align2::LEFT_CENTER,
-                kit::rail::CARET_RIGHT.to_string(),
-                theme::icon_font(px(11.0), false),
-                theme::INK_FAINT,
-            );
-            painter.text(
-                Pos2::new(chevron.right() + px(8.0), h.center().y),
-                Align2::LEFT_CENTER,
-                sub,
-                crumb,
-                theme::INK,
-            );
+        if item.sub_tabs.is_empty() {
+            return;
         }
-        let hint_right = Pos2::new(h.right() - px(16.0), h.center().y);
-        let cap = kit::rail::kbd(ui, hint_right, "Ctrl Enter", s);
-        ui.painter().text(
-            Pos2::new(cap.left() - px(8.0), h.center().y),
-            Align2::RIGHT_CENTER,
-            "Quick build",
-            FontId::new(px(12.0), theme::family_medium()),
-            theme::INK_FAINT,
+        let font = FontId::new(px(13.5), theme::family_medium());
+        let pad = px(14.5);
+        let inset = px(4.0);
+        let widths: Vec<f32> = item
+            .sub_tabs
+            .iter()
+            .map(|t| {
+                ui.painter()
+                    .layout_no_wrap((*t).to_owned(), font.clone(), theme::INK)
+                    .size()
+                    .x
+                    + pad * 2.0
+            })
+            .collect();
+        let total: f32 = widths.iter().sum::<f32>() + inset * 2.0;
+        let bar = egui::Rect::from_min_size(
+            Pos2::new(title.right() + px(24.0), h.center().y - px(18.5)),
+            egui::vec2(total, px(37.0)),
         );
+        ui.painter().rect_filled(
+            bar,
+            theme::corner(px(theme::RADIUS_FIELD)),
+            theme::FIELD,
+        );
+        let id = ui.make_persistent_id(("header_tabs", idx));
+        let active = self.sub_tabs[idx].min(widths.len() - 1);
+        let target_x: f32 = widths[..active].iter().sum();
+        let x = ui
+            .ctx()
+            .animate_value_with_time(id.with("x"), target_x, 0.18);
+        let w = ui
+            .ctx()
+            .animate_value_with_time(id.with("w"), widths[active], 0.18);
+        let pill = egui::Rect::from_min_size(
+            Pos2::new(bar.left() + inset + x, bar.top() + inset),
+            egui::vec2(w, bar.height() - inset * 2.0),
+        );
+        theme::shadow(ui.painter(), pill, px(8.0), 6, 40);
+        ui.painter()
+            .rect_filled(pill, theme::corner(px(8.0)), theme::SURFACE_2);
+        let mut left = bar.left() + inset;
+        for (i, label) in item.sub_tabs.iter().enumerate() {
+            let seg = egui::Rect::from_min_size(
+                Pos2::new(left, pill.top()),
+                egui::vec2(widths[i], pill.height()),
+            );
+            let resp = ui.interact(seg, id.with(i), egui::Sense::click());
+            if resp.clicked() {
+                self.sub_tabs[idx] = i;
+            }
+            let color = if i == active {
+                theme::INK
+            } else if resp.hovered() {
+                theme::INK_DIM
+            } else {
+                theme::INK_MUTED
+            };
+            ui.painter()
+                .text(seg.center(), Align2::CENTER_CENTER, *label, font.clone(), color);
+            left += widths[i];
+        }
+    }
+
+    fn login_cached(&mut self, ctx: &egui::Context) -> bool {
+        let Some(project) = self.projects.get(self.build_ui.project_sel) else {
+            return false;
+        };
+        let now = ctx.input(|i| i.time);
+        let key = project.steam_username.clone();
+        if self.login_status.0 != key || now - self.login_status.1 > 5.0 {
+            let cached = crate::features::accounts::cached_login_for_project(project).is_some();
+            self.login_status = (key, now, cached);
+        }
+        self.login_status.2
     }
 }
 
@@ -226,11 +260,7 @@ impl eframe::App for App {
 
                 ui.painter()
                     .rect_filled(ui.max_rect(), theme::corner(0.0), theme::SIDEBAR);
-                let radius = theme::px(theme::RADIUS_PANEL, s);
-                for card in [lay.rail, lay.header, lay.body] {
-                    theme::shadow(ui.painter(), card, radius, 18, 70);
-                    kit::bordered(ui.painter(), card, theme::SURFACE, theme::LINE_SOFT, radius);
-                }
+                crate::ui::window::titlebar(ui, lay.titlebar, s);
 
                 let account = self
                     .projects
@@ -243,29 +273,27 @@ impl eframe::App for App {
                         }
                     })
                     .unwrap_or_default();
-                let avatar_letter = account
+                let initials: String = account
                     .chars()
-                    .next()
-                    .map(|c| c.to_ascii_uppercase())
-                    .unwrap_or('S');
+                    .filter(|c| c.is_alphanumeric())
+                    .take(2)
+                    .collect::<String>()
+                    .to_uppercase();
+                let cached = self.login_cached(&ctx);
                 let rail_state = kit::rail::RailState {
                     active: self.page,
-                    sub_tabs: &self.sub_tabs,
-                    avatar: avatar_letter,
+                    initials: &initials,
                     account: &account,
+                    cached,
+                    brand_y: lay.header.center().y,
                 };
                 match kit::rail(ui, lay.rail, rail_state, s) {
                     Some(RailAction::Navigate(page)) => self.goto(&ctx, page),
-                    Some(RailAction::SubTab(page, tab)) => {
-                        self.sub_tabs[nav::index(page)] = tab;
-                        self.goto(&ctx, page);
-                    }
                     Some(RailAction::Search) => self.palette.toggle(),
                     Some(RailAction::Avatar) => self.account_menu = !self.account_menu,
-                    _ => {}
+                    None => {}
                 }
                 self.header_bar(ui, &lay);
-                crate::ui::window::titlebar(ui, lay.titlebar, s);
 
                 let blocked = kit::modal_active(&ctx)
                     || ctx.egui_wants_keyboard_input()
@@ -293,7 +321,7 @@ impl eframe::App for App {
                     self.goto(&ctx, page);
                 }
 
-                let clip = lay.body;
+                let clip = lay.header.union(lay.body).expand(theme::px(24.0, s));
                 if let Some(tr) = self.transition {
                     let t = tr.progress(&ctx);
                     if let Some(prev) = self.prev_page {

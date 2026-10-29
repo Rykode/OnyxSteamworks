@@ -1,4 +1,4 @@
-use eframe::egui::{self, Align2, FontId, Pos2, Rect, Sense, UiBuilder, Vec2};
+use eframe::egui::{self, Align2, FontId, Pos2, Rect, Sense, UiBuilder, Vec2, pos2};
 
 use super::state::PickField;
 use crate::app::App;
@@ -7,170 +7,266 @@ use crate::ui::kit;
 use crate::ui::kit::{Button, ButtonKind, Input};
 use crate::ui::theme;
 
-pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &egui::Context) -> bool {
+const PITCH: f32 = 77.0;
+const FIELD_H: f32 = 39.0;
+
+pub fn show(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &egui::Context) -> bool {
     let px = |v: f32| theme::px(v, s);
+    kit::card_title(ui.painter(), card, "Editor", s);
+    let save = status(app, ui, card, s);
 
-    if app.projects_ui.dirty() {
-        ui.painter().circle_filled(
-            Pos2::new(rect.right() - px(14.0), rect.top() + px(14.0)),
-            px(4.0),
-            theme::WARNING,
-        );
+    let area = Rect::from_min_max(
+        pos2(card.left(), card.top() + px(44.0)),
+        pos2(card.right(), card.bottom() - px(6.0)),
+    );
+    let mut changed = false;
+    let mut cui = ui.new_child(UiBuilder::new().max_rect(area));
+    egui::ScrollArea::vertical()
+        .id_salt("editor_scroll")
+        .auto_shrink([false, false])
+        .show(&mut cui, |ui| {
+            let (rect, _) = ui.allocate_exact_size(
+                Vec2::new(area.width(), px(PITCH * 4.0 + 6.0)),
+                Sense::hover(),
+            );
+            changed |= fields(app, ui, rect, s, ctx);
+        });
+    if changed {
+        app.projects_ui.revalidate();
     }
-
-    let tab_rect = Rect::from_min_size(
-        Pos2::new(rect.left(), rect.top()),
-        Vec2::new(px(240.0), px(32.0)),
-    );
-    kit::tabs(
-        ui,
-        tab_rect,
-        &["Editor", "VDF preview"],
-        &mut app.projects_ui.editor_tab,
-        s,
-    );
-
-    let save_h = px(66.0);
-    let content = Rect::from_min_max(
-        Pos2::new(rect.left(), tab_rect.bottom() + px(18.0)),
-        Pos2::new(rect.right(), rect.bottom() - save_h),
-    );
-
-    if app.projects_ui.editor_tab == 1 {
-        super::preview::show(app, ui, content, s, ctx);
-    } else {
-        let mut changed = false;
-        let mut cui = ui.new_child(UiBuilder::new().max_rect(content));
-        egui::ScrollArea::vertical()
-            .id_salt("editor_scroll")
-            .auto_shrink([false, false])
-            .show(&mut cui, |ui| {
-                ui.set_width(content.width() - px(16.0));
-                changed |= basic_fields(app, ui, s, ctx);
-                super::depots::sections(app, ui, s, ctx);
-                super::checklist::sections(app, ui, s);
-                ui.add_space(px(8.0));
-            });
-        if changed {
-            app.projects_ui.revalidate();
-        }
-    }
-
-    let valid = app.projects_ui.valid();
-    let dirty = app.projects_ui.dirty();
-    let reason = app.projects_ui.first_error().unwrap_or_default();
-    let save_rect = Rect::from_min_size(
-        Pos2::new(rect.right() - px(150.0), rect.bottom() - px(44.0)),
-        Vec2::new(px(150.0), px(44.0)),
-    );
-    let mut btn = Button::new("Save project", ButtonKind::Primary)
-        .icon(theme::icon::CHECK)
-        .enabled(valid && dirty);
-    if !valid {
-        btn = btn.disabled_reason(&reason);
-    }
-    btn.show(ui, save_rect, s).clicked() && valid && dirty
+    save
 }
 
-fn basic_fields(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context) -> bool {
+fn status(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) -> bool {
     let px = |v: f32| theme::px(v, s);
+    let y = card.top() + px(26.0);
+    let mut right = card.right() - px(20.0);
+    let dirty = app.projects_ui.dirty();
+    let mut save = false;
+    if let Some(err) = app.projects_ui.first_error().filter(|_| dirty) {
+        right = ui
+            .painter()
+            .text(
+                Pos2::new(right, y),
+                Align2::RIGHT_CENTER,
+                err,
+                FontId::new(px(12.5), theme::family_medium()),
+                theme::DANGER,
+            )
+            .left();
+    } else if dirty {
+        let btn = Rect::from_min_max(Pos2::new(right - px(64.0), y - px(13.0)), Pos2::new(right, y + px(13.0)));
+        save = Button::new("Save", ButtonKind::Primary)
+            .show(ui, btn, s)
+            .on_hover_text("Ctrl S")
+            .clicked();
+        right = ui
+            .painter()
+            .text(
+                Pos2::new(btn.left() - px(10.0), y),
+                Align2::RIGHT_CENTER,
+                "Unsaved changes",
+                FontId::new(px(12.5), theme::family_medium()),
+                theme::WARNING,
+            )
+            .left();
+    } else {
+        right = kit::card_note(ui.painter(), card, "Saved", s).left();
+    }
+    if kit::link(
+        ui,
+        Pos2::new(right - px(16.0), y),
+        Align2::RIGHT_CENTER,
+        "VDF preview",
+        theme::INK_MUTED,
+        s,
+    )
+    .clicked()
+    {
+        app.projects_ui.vdf_open = true;
+    }
+    save
+}
+
+fn fields(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &egui::Context) -> bool {
+    let px = |v: f32| theme::px(v, s);
+    let left = rect.left() + px(20.0);
+    let width = rect.width() - px(40.0);
+    let gap = px(17.0);
+    let half = (width - gap) / 2.0;
+    let col = |i: usize| left + (half + gap) * i as f32;
+    let label_y = |row: usize| rect.top() + px(15.0 + PITCH * row as f32);
+    let field = |row: usize, x: f32, w: f32| {
+        Rect::from_min_size(
+            Pos2::new(x, label_y(row) + px(15.0)),
+            Vec2::new(w, px(FIELD_H)),
+        )
+    };
     let mut changed = false;
 
-    let r = row(ui, s, 64.0);
-    let gap = px(18.0);
-    let left_w = (r.width() - gap) * 0.42;
-    let right_w = r.width() - gap - left_w;
-    let left = Rect::from_min_size(r.min, Vec2::new(left_w, r.height()));
-    let right = Rect::from_min_size(
-        Pos2::new(r.left() + left_w + gap, r.top()),
-        Vec2::new(right_w, r.height()),
-    );
-    changed |= labelled_text(app, ui, left, "App ID", None, false, s);
-    changed |= labelled_text(app, ui, right, "Display name", Some("(Optional)"), false, s);
-    ui.add_space(px(22.0));
+    label(ui, Pos2::new(col(0), label_y(0)), "Display name", s);
+    changed |= text(app, ui, field(0, col(0), half), "name", false, s);
+    label(ui, Pos2::new(col(1), label_y(0)), "Steam app ID", s);
+    changed |= text(app, ui, field(0, col(1), half), "app_id", true, s);
 
     let settings = crate::config::load_settings().unwrap_or_default();
-    changed |= override_path(
+    label(ui, Pos2::new(col(0), label_y(1)), "Content root", s);
+    changed |= path(
         app,
         ui,
-        "Content root",
-        &settings.default_content,
+        field(1, col(0), half),
         PickField::ContentRoot,
+        &settings.default_content,
         s,
         ctx,
     );
-    changed |= override_path(
+    label(ui, Pos2::new(col(1), label_y(1)), "Build output", s);
+    changed |= path(
         app,
         ui,
-        "Build output",
-        &settings.default_output,
+        field(1, col(1), half),
         PickField::BuildOutput,
+        &settings.default_output,
         s,
         ctx,
     );
 
-    template_fields(app, ui, s);
+    label(ui, Pos2::new(col(0), label_y(2)), "Description template", s);
+    let project = app.projects_ui.project();
+    let branch = if project.set_live_branch.is_empty() {
+        "default".to_string()
+    } else {
+        project.set_live_branch.clone()
+    };
+    let resolved = template::expand(&project.desc_template, &template::resolve(&project, &branch));
+    if !resolved.trim().is_empty() {
+        let clip = Rect::from_min_max(
+            Pos2::new(col(0) + px(170.0), label_y(2) - px(10.0)),
+            Pos2::new(left + width, label_y(2) + px(10.0)),
+        );
+        ui.painter().with_clip_rect(clip).text(
+            Pos2::new(left + width, label_y(2)),
+            Align2::RIGHT_CENTER,
+            format!("Resolves to  {resolved}"),
+            FontId::new(px(12.0), theme::family_medium()),
+            theme::INK_FAINT,
+        );
+    }
+    changed |= Input::new(&mut app.projects_ui.base.desc_template)
+        .hint("v{version}-{branch} · build {build_number} · {date}")
+        .mono(true)
+        .show(ui, field(2, left, width), s)
+        .changed();
+
+    label(ui, Pos2::new(col(0), label_y(3)), "Version file", s);
+    changed |= Input::new(&mut app.projects_ui.base.version_file)
+        .hint("version.txt or version.json (optional)")
+        .mono(true)
+        .show(ui, field(3, col(0), half), s)
+        .changed();
+    label(ui, Pos2::new(col(1), label_y(3)), "Default account", s);
+    default_account(app, ui, field(3, col(1), half), s);
     changed
 }
 
-fn template_fields(app: &mut App, ui: &mut egui::Ui, s: f32) {
-    let px = |v: f32| theme::px(v, s);
-    label(ui, "Description template", s);
-    let r = row(ui, s, 40.0);
-    Input::new(&mut app.projects_ui.base.desc_template)
-        .hint("v{version} {branch} {date}.{time} #{build_number} {git_commit}")
-        .show(
-            ui,
-            Rect::from_min_size(r.min, Vec2::new(r.width(), px(40.0))),
-            s,
-        );
-    ui.add_space(px(10.0));
-
-    let branch = app.projects_ui.base.set_live_branch.clone();
-    let project = app.projects_ui.project();
-    let vars = template::resolve(
-        &project,
-        if branch.is_empty() {
-            "default"
-        } else {
-            &branch
-        },
-    );
-    let resolved = template::expand(&project.desc_template, &vars);
-    let preview = if resolved.trim().is_empty() {
-        "(type a template above)".to_string()
-    } else {
-        resolved
-    };
-    label(ui, "Resolved preview", s);
-    let pr = row(ui, s, 36.0);
-    let block = Rect::from_min_size(pr.min, Vec2::new(pr.width(), px(32.0)));
-    kit::bordered(
-        &ui.painter().clone(),
-        block,
-        theme::FIELD,
-        theme::LINE,
-        px(theme::RADIUS_FIELD),
-    );
+fn label(ui: &egui::Ui, pos: Pos2, text: &str, s: f32) {
     ui.painter().text(
-        Pos2::new(block.left() + px(12.0), block.center().y),
+        pos,
         Align2::LEFT_CENTER,
-        preview,
-        FontId::new(px(12.5), theme::family_medium()),
+        text,
+        FontId::new(theme::px(13.0, s), theme::family_medium()),
         theme::INK_DIM,
     );
-    ui.add_space(px(10.0));
+}
 
-    label(ui, "Version file", s);
-    let vr = row(ui, s, 40.0);
-    Input::new(&mut app.projects_ui.base.version_file)
-        .hint("version.txt or version.json in the content root (optional)")
-        .show(
-            ui,
-            Rect::from_min_size(vr.min, Vec2::new(vr.width(), px(40.0))),
-            s,
+fn value_mut<'a>(app: &'a mut App, key: &str) -> &'a mut String {
+    match key {
+        "name" => &mut app.projects_ui.form.name,
+        "app_id" => &mut app.projects_ui.form.app_id,
+        "content_root" => &mut app.projects_ui.form.content_root,
+        "build_output_dir" => &mut app.projects_ui.form.build_output,
+        _ => unreachable!("unknown editor field: {key}"),
+    }
+}
+
+fn text(app: &mut App, ui: &mut egui::Ui, rect: Rect, key: &str, mono: bool, s: f32) -> bool {
+    let err = app.projects_ui.error_for(key).is_some();
+    Input::new(value_mut(app, key))
+        .mono(mono)
+        .error(err)
+        .show(ui, rect, s)
+        .changed()
+}
+
+fn path(
+    app: &mut App,
+    ui: &mut egui::Ui,
+    rect: Rect,
+    field: PickField,
+    default: &str,
+    s: f32,
+    ctx: &egui::Context,
+) -> bool {
+    let px = |v: f32| theme::px(v, s);
+    let key = match field {
+        PickField::ContentRoot => "content_root",
+        _ => "build_output_dir",
+    };
+    let err = app.projects_ui.error_for(key).is_some();
+    let hint = if default.is_empty() {
+        "Choose a folder".to_string()
+    } else {
+        default.to_string()
+    };
+    let changed = Input::new(value_mut(app, key))
+        .hint(&hint)
+        .mono(true)
+        .error(err)
+        .right_pad(22.0)
+        .show(ui, rect, s)
+        .changed();
+    let btn = Rect::from_center_size(
+        Pos2::new(rect.right() - px(22.0), rect.center().y),
+        Vec2::splat(px(28.0)),
+    );
+    let resp = kit::icon_button(ui, btn, theme::icon::FOLDER, s);
+    if resp
+        .on_hover_text("Choose folder. Leave empty to use the Settings default.")
+        .clicked()
+    {
+        app.projects_ui.spawn_pick(ctx, field, 0);
+    }
+    changed
+}
+
+fn default_account(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
+    let px = |v: f32| theme::px(v, s);
+    let accounts = crate::config::load_settings()
+        .map(|c| c.accounts)
+        .unwrap_or_default();
+    if accounts.is_empty() {
+        ui.painter().text(
+            Pos2::new(rect.left(), rect.center().y),
+            Align2::LEFT_CENTER,
+            "Add accounts in Settings > Accounts",
+            FontId::new(px(12.5), theme::family_medium()),
+            theme::INK_FAINT,
         );
-    ui.add_space(px(14.0));
+        return;
+    }
+    let current = app.projects_ui.base.default_account.clone();
+    let mut sel = accounts
+        .iter()
+        .position(|a| a.eq_ignore_ascii_case(&current))
+        .unwrap_or(0);
+    let refs: Vec<&str> = accounts.iter().map(|x| x.as_str()).collect();
+    kit::dropdown(ui, rect, &refs, &mut sel, s);
+    if let Some(name) = accounts.get(sel)
+        && !name.eq_ignore_ascii_case(&current)
+    {
+        app.projects_ui.base.default_account = name.clone();
+        app.projects_ui.form.username = name.clone();
+    }
 }
 
 pub(super) fn row(ui: &mut egui::Ui, s: f32, h: f32) -> Rect {
@@ -181,131 +277,7 @@ pub(super) fn row(ui: &mut egui::Ui, s: f32, h: f32) -> Rect {
     rect
 }
 
-pub(super) fn label(ui: &mut egui::Ui, text: &str, s: f32) {
+pub(super) fn label_row(ui: &mut egui::Ui, text: &str, s: f32) {
     let r = row(ui, s, 20.0);
     kit::label(&ui.painter().clone(), r.left_top(), text, s);
-}
-
-fn key_for(label: &str) -> &'static str {
-    match label {
-        "Display name" => "name",
-        "App ID" => "app_id",
-        "Content root" => "content_root",
-        "Build output" => "build_output_dir",
-        _ => "",
-    }
-}
-
-fn value_mut<'a>(app: &'a mut App, label: &str) -> &'a mut String {
-    match label {
-        "Display name" => &mut app.projects_ui.form.name,
-        "App ID" => &mut app.projects_ui.form.app_id,
-        "Content root" => &mut app.projects_ui.form.content_root,
-        "Build output" => &mut app.projects_ui.form.build_output,
-        _ => unreachable!("unknown editor field: {label}"),
-    }
-}
-
-fn labelled_text(
-    app: &mut App,
-    ui: &mut egui::Ui,
-    rect: Rect,
-    lbl: &str,
-    suffix: Option<&str>,
-    mask: bool,
-    s: f32,
-) -> bool {
-    let px = |v: f32| theme::px(v, s);
-    let painter = ui.painter().clone();
-    match suffix {
-        Some(suf) => kit::label_optional(&painter, rect.left_top(), lbl, suf, s),
-        None => kit::label(&painter, rect.left_top(), lbl, s),
-    }
-    let field = Rect::from_min_size(
-        Pos2::new(rect.left(), rect.top() + px(24.0)),
-        Vec2::new(rect.width(), px(40.0)),
-    );
-    let err = app.projects_ui.error_for(key_for(lbl));
-    let value = value_mut(app, lbl);
-    let mut ti = Input::new(value).mask(mask);
-    if let Some(e) = &err {
-        ti = ti.error(true).helper(e);
-    }
-    ti.show(ui, field, s).changed()
-}
-
-#[allow(clippy::too_many_arguments)]
-fn override_path(
-    app: &mut App,
-    ui: &mut egui::Ui,
-    lbl: &str,
-    default: &str,
-    field: PickField,
-    s: f32,
-    ctx: &egui::Context,
-) -> bool {
-    let px = |v: f32| theme::px(v, s);
-    let overridden = !value_mut(app, lbl).trim().is_empty();
-    let r = row(ui, s, 20.0);
-    let suffix = if overridden {
-        "Project override"
-    } else {
-        "From Settings"
-    };
-    kit::label_optional(&ui.painter().clone(), r.left_top(), lbl, suffix, s);
-    let r = row(ui, s, 48.0);
-    let gap = px(8.0);
-    let button_w = px(104.0);
-    let buttons = if overridden { 2.0 } else { 1.0 };
-    let input = Rect::from_min_size(
-        r.min,
-        Vec2::new(r.width() - (button_w + gap) * buttons, px(40.0)),
-    );
-    let err = app.projects_ui.error_for(key_for(lbl));
-    let mut changed = false;
-    if overridden {
-        let value = value_mut(app, lbl);
-        let mut ti = Input::new(value);
-        if let Some(e) = &err {
-            ti = ti.error(true).helper(e);
-        }
-        changed |= ti.show(ui, input, s).changed();
-    } else {
-        let mut shown = default.to_string();
-        let mut ti = Input::new(&mut shown)
-            .hint("No default set in Settings > General")
-            .readonly(true);
-        if let Some(e) = &err {
-            ti = ti.error(true).helper(e);
-        }
-        ti.show(ui, input, s);
-    }
-    let pick = Rect::from_min_size(
-        Pos2::new(input.right() + gap, input.top()),
-        Vec2::new(button_w, px(40.0)),
-    );
-    let pick_label = if overridden { "Browse" } else { "Override" };
-    if Button::new(pick_label, ButtonKind::Secondary)
-        .icon(theme::icon::FOLDER)
-        .show(ui, pick, s)
-        .clicked()
-    {
-        app.projects_ui.spawn_pick(ctx, field, 0);
-    }
-    if overridden {
-        let reset = Rect::from_min_size(
-            Pos2::new(pick.right() + gap, input.top()),
-            Vec2::new(button_w, px(40.0)),
-        );
-        let resp = Button::new("Reset", ButtonKind::Ghost)
-            .icon(theme::icon::X)
-            .show(ui, reset, s);
-        let resp = kit::tooltip(resp, "Use the folder from Settings again");
-        if resp.clicked() {
-            value_mut(app, lbl).clear();
-            changed = true;
-        }
-    }
-    ui.add_space(if err.is_some() { px(34.0) } else { px(18.0) });
-    changed
 }

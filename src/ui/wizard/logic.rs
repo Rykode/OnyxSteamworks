@@ -152,7 +152,7 @@ fn authorize_account(app: &mut App, ctx: &egui::Context) {
             app.wizard.open = false;
             app.toasts.push(
                 kit::ToastLevel::Success,
-                "Authorizing — answer any prompt on the Build page",
+                "Authorizing, answer any prompt on the Build page",
             );
         }
         Err(e) => app
