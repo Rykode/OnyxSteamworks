@@ -3,7 +3,7 @@
 
 use std::sync::Mutex;
 
-const LATEST_URL: &str = "https://api.github.com/repos/RykoTheDev/OnyxSteamworks/releases/latest";
+const LATEST_URL: &str = "https://api.github.com/repos/Rykode/OnyxSteamworks/releases/latest";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Update {
