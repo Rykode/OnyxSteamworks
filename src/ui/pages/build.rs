@@ -15,9 +15,9 @@ pub use state::BuildState;
 
 use eframe::egui::{self, Align2, FontId, Pos2, Rect, UiBuilder, Vec2};
 
-use crate::app::App;
+use crate::app::{App, Page};
 use crate::features::accounts;
-use crate::model::Project;
+use crate::model::{BuildStatus, Project};
 use crate::steamcmd::{BuildResult, Stage};
 use crate::ui::kit;
 use crate::ui::kit::{Button, ButtonKind, Input};
@@ -312,7 +312,26 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
     let branch = selected_branch(app, project);
     let branch = if branch.is_empty() { "default".to_string() } else { branch };
     let number = build_number(app, project);
-    let (glyph, color, title, sub) = if st.running && st.authorizing {
+    // With no result from this session, the last recorded run decides the card.
+    // A failed or cancelled run stays visible and opens its log in History.
+    let last_unhappy = if st.running || st.outcome.is_some() {
+        None
+    } else {
+        app.history_ui
+            .latest_for(&project.id)
+            .filter(|r| matches!(r.status, BuildStatus::Failed | BuildStatus::Cancelled))
+            .cloned()
+    };
+    let (glyph, color, title, sub) = if let Some(rec) = &last_unhappy {
+        let failed = rec.status == BuildStatus::Failed;
+        let on = if rec.branch.is_empty() { "default" } else { rec.branch.as_str() };
+        (
+            theme::icon::X,
+            if failed { theme::DANGER } else { theme::WARNING },
+            if failed { "Last build failed" } else { "Last build cancelled" }.to_string(),
+            format!("On {on} {}", crate::ui::pages::history::rel_time(rec.timestamp)),
+        )
+    } else if st.running && st.authorizing {
         (theme::icon::GEAR, theme::ACCENT_HI, "Authorizing account".to_string(), format!("{} elapsed", clock))
     } else if st.running {
         let (glyph, title) = match st.stage {
@@ -358,6 +377,37 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
             }
         }
     };
+    let links_to_log = last_unhappy.is_some();
+    if let Some(rec) = last_unhappy {
+        let resp = ui.interact(card, ui.make_persistent_id("build_last_result"), egui::Sense::click());
+        resp.widget_info(|| {
+            egui::WidgetInfo::labeled(egui::Role::Button, true, "Open the last build in History")
+        });
+        // Same hover treatment as the project list rows.
+        let hover = ui.ctx().animate_bool_with_time(
+            ui.make_persistent_id("build_last_result_hover"),
+            resp.hovered() || resp.has_focus(),
+            0.12,
+        );
+        if resp.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
+        if hover > 0.01 {
+            ui.painter().rect_filled(
+                card,
+                theme::corner(px(kit::RADIUS_CARD_PX)),
+                theme::with_alpha(theme::SURFACE_2, (hover * 200.0) as u8),
+            );
+        }
+        if resp.has_focus() {
+            theme::focus_ring(ui.painter(), card, px(kit::RADIUS_CARD_PX), theme::FOCUS);
+        }
+        if resp.clicked() {
+            app.history_ui.open_detail(rec);
+            app.nav_request = Some(Page::History);
+        }
+    }
+    let st = &app.build_ui;
     let painter = ui.painter();
     painter.rect_filled(tile, theme::corner(px(12.0)), theme::with_alpha(color, 34));
     painter.text(
@@ -376,13 +426,24 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
         FontId::new(px(17.0), theme::family_semibold()),
         theme::INK,
     );
-    painter.with_clip_rect(clip).text(
+    let sub_font = FontId::new(px(13.0), theme::family_medium());
+    let sub_rect = painter.with_clip_rect(clip).text(
         Pos2::new(tx, card.center().y + px(12.0)),
         Align2::LEFT_CENTER,
         sub,
-        FontId::new(px(13.0), theme::family_medium()),
+        sub_font.clone(),
         theme::INK_MUTED,
     );
+    if links_to_log {
+        // Link colour matches the other in-card links (e.g. the checklist template link).
+        painter.with_clip_rect(clip).text(
+            Pos2::new(sub_rect.right() + px(8.0), sub_rect.center().y),
+            Align2::LEFT_CENTER,
+            "View log",
+            sub_font,
+            theme::ACCENT_HI,
+        );
+    }
     if st.running {
         ctx.request_repaint_after(std::time::Duration::from_millis(500));
     }
@@ -486,15 +547,7 @@ fn options_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project,
                 theme::INK_DIM,
             );
             y += px(34.0);
-            let mut cx = x;
-            for (i, label) in state::OPTIONS.iter().enumerate() {
-                let size = kit::chip_size(ui, label, s);
-                let rr = Rect::from_min_size(Pos2::new(cx, y), size);
-                if kit::chip(ui, rr, label, app.build_ui.options[i], s).clicked() {
-                    app.build_ui.options[i] = !app.build_ui.options[i];
-                }
-                cx += size.x + px(8.0);
-            }
+            set_live_row(app, ui, Pos2::new(x, y), w, project, s);
             y += px(44.0);
             actions::cli_actions(app, ui, Rect::from_min_size(Pos2::new(x, y), Vec2::new(w, px(32.0))), project, s);
             y += px(44.0);
@@ -528,6 +581,61 @@ fn options_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project,
             y += px(46.0);
             stages::verify_offer(app, ui, Rect::from_min_size(Pos2::new(x, y), Vec2::new(w, px(34.0))), s);
         });
+}
+
+/// The switch that decides whether this upload goes live on the chosen branch.
+/// SteamCMD cannot set the default branch live, so that case is explained instead.
+fn set_live_row(app: &mut App, ui: &mut egui::Ui, at: Pos2, w: f32, project: &Project, s: f32) {
+    let px = |v: f32| theme::px(v, s);
+    let branch = selected_branch(app, project);
+    let font = FontId::new(px(13.0), theme::family_medium());
+    let row = Rect::from_min_size(at, Vec2::new(w, px(22.0)));
+    if branch.trim().is_empty() || branch.eq_ignore_ascii_case("default") {
+        ui.painter().text(
+            Pos2::new(at.x, row.center().y),
+            Align2::LEFT_CENTER,
+            "Uploads only. Set the default branch live in Steamworks.",
+            FontId::new(px(12.5), theme::family_medium()),
+            theme::INK_MUTED,
+        );
+        return;
+    }
+    let live_level = guard::is_live(project, &branch);
+    let label = if live_level {
+        format!("Set live on {branch} (Live branch)")
+    } else {
+        format!("Set live on {branch}")
+    };
+    let tog = Rect::from_min_size(at, Vec2::new(px(40.0), px(22.0)));
+    let resp = kit::toggle(ui, tog, &mut app.build_ui.set_live, s);
+    let on = app.build_ui.set_live;
+    resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Switch, true, on, &label));
+    let tx = tog.right() + px(10.0);
+    let clip = Rect::from_min_max(Pos2::new(tx, row.top()), Pos2::new(row.right(), row.bottom()));
+    let painter = ui.painter().with_clip_rect(clip);
+    let suffix = "· upload only";
+    let suffix_w = if on {
+        0.0
+    } else {
+        painter.layout_no_wrap(suffix.to_owned(), font.clone(), theme::INK).size().x + px(8.0)
+    };
+    let shown = kit::input::head_fit(&painter, &label, &font, (clip.width() - suffix_w).max(px(40.0)));
+    let drawn = painter.text(
+        Pos2::new(tx, row.center().y),
+        Align2::LEFT_CENTER,
+        &shown,
+        font.clone(),
+        if live_level && on { theme::WARNING } else { theme::INK_DIM },
+    );
+    if !on {
+        painter.text(
+            Pos2::new(drawn.right() + px(8.0), row.center().y),
+            Align2::LEFT_CENTER,
+            suffix,
+            font,
+            theme::INK_MUTED,
+        );
+    }
 }
 
 fn authorize(app: &mut App, project: &Project, ctx: &egui::Context) {

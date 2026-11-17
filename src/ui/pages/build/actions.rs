@@ -95,6 +95,7 @@ pub(super) fn cli_actions(app: &mut App, ui: &mut egui::Ui, rect: Rect, project:
             &app.build_ui.description,
             app.build_ui.preview_only,
             false,
+            !app.build_ui.set_live,
         );
         ui.ctx().copy_text(command);
         app.toasts

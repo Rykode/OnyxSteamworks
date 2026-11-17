@@ -187,6 +187,10 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         if let Some(name) = remove {
             accounts::remove(&mut cfg.accounts, &name);
             save(&cfg);
+            app.toasts.push(
+                kit::ToastLevel::Success,
+                format!("Removed {name}. Its cached Steam login is kept."),
+            );
         }
         if let Some(name) = authorize {
             start_authorize(app, &name, &ctx);

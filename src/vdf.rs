@@ -14,6 +14,8 @@ pub struct BuildOptions {
     pub local: Option<String>,
     pub branch: String,
     pub desc: String,
+    /// Upload the build without setting any branch live.
+    pub upload_only: bool,
 }
 
 fn escape(s: &str) -> String {
@@ -79,7 +81,12 @@ fn gen_appbuild(project: &Project, options: &BuildOptions) -> String {
         "contentroot",
         &fwd_path(&path_string(&project.content_root)),
     ));
-    s.push_str(&pair(1, "setlive", &setlive(project, options)));
+    let live = if options.upload_only {
+        String::new()
+    } else {
+        setlive(project, options)
+    };
+    s.push_str(&pair(1, "setlive", &live));
     s.push_str(&pair(1, "preview", if options.preview { "1" } else { "0" }));
     if let Some(local) = &options.local {
         s.push_str(&pair(1, "local", &fwd_path(local)));
@@ -330,6 +337,18 @@ mod tests {
         let count = std::fs::read_dir(dir.join("pid")).expect("dir").count();
         assert_eq!(count, KEEP_RUNS);
         std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn upload_only_leaves_setlive_empty() {
+        let opt = BuildOptions {
+            branch: "staging".to_string(),
+            upload_only: true,
+            ..Default::default()
+        };
+        let out = generate_vdfs(&sample(), &opt);
+        assert!(out[0].1.contains("\"setlive\"	\"\"
+"), "{}", out[0].1);
     }
 
     #[test]

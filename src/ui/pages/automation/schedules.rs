@@ -438,9 +438,13 @@ fn stepper(ui: &mut egui::Ui, at: Pos2, value: &mut u32, min: u32, max: u32, ste
     }
 }
 
-fn subtitle(sch: &Schedule, error: Option<&String>) -> String {
+fn subtitle(sch: &Schedule, error: Option<&String>, orphaned: bool) -> String {
     if sch.is_legacy() {
         return "Created before schedules ran pipelines. Delete it and add a new one.".into();
+    }
+    if orphaned {
+        return "Its project or pipeline was deleted, so it can't run. Delete it and add a new one."
+            .into();
     }
     if let Some(e) = error {
         return format!("Can't check this trigger: {e}");
@@ -473,6 +477,17 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
     let px = |v: f32| theme::px(v, s);
     let schedules = app.scheduler.schedules.clone();
     let trigger_errors = app.scheduler.trigger_errors.clone();
+    // Schedules whose saved pipeline is gone would only fail at run time; flag them now.
+    let orphaned: std::collections::HashSet<String> = schedules
+        .iter()
+        .filter(|sch| {
+            !sch.is_legacy()
+                && !app.projects.iter().any(|p| {
+                    p.id == sch.project_id && p.pipelines.iter().any(|x| x.id == sch.pipeline_id)
+                })
+        })
+        .map(|sch| sch.id.clone())
+        .collect();
     let running = app.scheduler.active.as_ref().map(|a| a.schedule_id.clone());
     let busy = app.scheduler.busy() || app.pipeline_ui.running;
     let mut action = None;
@@ -497,6 +512,8 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 );
                 let dot_color = if running.as_ref() == Some(&sch.id) {
                     theme::ACCENT
+                } else if orphaned.contains(&sch.id) {
+                    theme::WARNING
                 } else if !sch.enabled || sch.is_legacy() {
                     theme::INK_FAINT
                 } else {
@@ -523,7 +540,7 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 let controls = if sch.is_legacy() { px(60.0) } else { px(420.0) };
                 let sub = kit::input::head_fit(
                     ui.painter(),
-                    &subtitle(sch, trigger_errors.get(&sch.id)),
+                    &subtitle(sch, trigger_errors.get(&sch.id), orphaned.contains(&sch.id)),
                     &sub_font,
                     (r.width() - px(32.0) - controls).max(px(80.0)),
                 );
@@ -532,7 +549,10 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     Align2::LEFT_CENTER,
                     sub,
                     sub_font,
-                    if sch.is_legacy() || trigger_errors.contains_key(&sch.id) {
+                    if sch.is_legacy()
+                        || orphaned.contains(&sch.id)
+                        || trigger_errors.contains_key(&sch.id)
+                    {
                         theme::WARNING
                     } else {
                         theme::INK_MUTED

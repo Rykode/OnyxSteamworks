@@ -52,6 +52,9 @@ pub struct BuildArgs {
     pub preview: bool,
     #[arg(long = "no-diff")]
     pub no_diff: bool,
+    /// Upload without setting the branch live.
+    #[arg(long = "upload-only")]
+    pub upload_only: bool,
 }
 
 #[derive(Args)]
@@ -230,7 +233,7 @@ fn build_cmd(args: BuildArgs) -> i32 {
     };
     let branch = args.branch.unwrap_or_default();
     let desc = args.desc.unwrap_or_default();
-    exec::execute_build(project, &branch, &desc, args.preview, args.no_diff)
+    exec::execute_build(project, &branch, &desc, args.preview, args.no_diff, args.upload_only)
 }
 
 fn list_projects() -> i32 {
@@ -314,6 +317,7 @@ pub fn build_command_string(
     desc: &str,
     preview: bool,
     no_diff: bool,
+    upload_only: bool,
 ) -> String {
     let reference = if project.name.is_empty() {
         project.id.as_str()
@@ -336,6 +340,9 @@ pub fn build_command_string(
     }
     if preview {
         parts.push("--preview".to_string());
+    }
+    if upload_only {
+        parts.push("--upload-only".to_string());
     }
     if no_diff {
         parts.push("--no-diff".to_string());
@@ -403,6 +410,7 @@ mod tests {
             "notes",
             "--preview",
             "--no-diff",
+            "--upload-only",
         ])
         .expect("parse");
         match cli.command {
@@ -412,6 +420,7 @@ mod tests {
                 assert_eq!(a.desc.as_deref(), Some("notes"));
                 assert!(a.preview);
                 assert!(a.no_diff);
+                assert!(a.upload_only);
             }
             _ => panic!("expected build"),
         }
@@ -497,7 +506,7 @@ mod tests {
             name: "My Game".into(),
             ..Default::default()
         };
-        let cmd = build_command_string(&project, "beta", "", true, false);
+        let cmd = build_command_string(&project, "beta", "", true, false, false);
         assert_eq!(
             cmd,
             "onyx build --project \"My Game\" --branch beta --preview"

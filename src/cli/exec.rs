@@ -211,6 +211,7 @@ pub fn execute_build(
     desc: &str,
     preview: bool,
     no_diff: bool,
+    upload_only: bool,
 ) -> i32 {
     let errors = validate_project(project);
     if !errors.is_empty() {
@@ -222,6 +223,9 @@ pub fn execute_build(
 
     let shown_branch = if branch.is_empty() { "default" } else { branch };
     println!("Building {} on branch '{}'", project.name, shown_branch);
+    if upload_only {
+        println!("Upload only: the branch will not be set live");
+    }
     if !desc.trim().is_empty() {
         println!("Description: {desc}");
     }
@@ -252,6 +256,7 @@ pub fn execute_build(
         local: None,
         branch: branch.to_string(),
         desc: desc.to_string(),
+        upload_only,
     };
     let paths = match vdf::write_vdfs(project, &options, &work) {
         Ok(p) => p,
@@ -382,7 +387,7 @@ mod tests {
     fn execute_build_against_fake_succeeds() {
         let project = valid_project(fake_bin());
         assert_eq!(
-            execute_build(&project, "", "from test", false, true),
+            execute_build(&project, "", "from test", false, true, false),
             SUCCESS
         );
     }
@@ -393,12 +398,12 @@ mod tests {
             steamcmd_path: fake_bin(),
             ..Default::default()
         };
-        assert_eq!(execute_build(&project, "", "", false, true), VALIDATION);
+        assert_eq!(execute_build(&project, "", "", false, true, false), VALIDATION);
     }
 
     #[test]
     fn execute_build_fails_when_steamcmd_missing() {
         let project = valid_project(PathBuf::from("/nonexistent/steamcmd-xyz"));
-        assert_eq!(execute_build(&project, "", "", false, true), FAILURE);
+        assert_eq!(execute_build(&project, "", "", false, true, false), FAILURE);
     }
 }

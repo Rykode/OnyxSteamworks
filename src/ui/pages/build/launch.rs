@@ -22,6 +22,7 @@ impl BuildState {
             local: None,
             branch: branch.to_string(),
             desc: self.description.clone(),
+            upload_only: !self.set_live,
         };
         let paths = vdf::write_vdfs(project, &options, &work).map_err(|e| e.to_string())?;
         let run_desc = vdf::resolved_desc(project, &options);
@@ -49,13 +50,16 @@ impl BuildState {
         self.run_branch = branch.to_string();
         self.run_desc = run_desc;
         self.run_preview = self.preview_only;
+        self.run_set_live = self.set_live && !self.preview_only;
         if crate::features::accounts::cached_login_for_project(project).is_some() {
             self.push_log("Using cached Steam login.", false);
         }
         let note = if self.preview_only {
             "Starting preview build..."
-        } else {
+        } else if self.set_live {
             "Starting build..."
+        } else {
+            "Starting build. It will upload without being set live."
         };
         self.push_log(note, false);
         Ok(())

@@ -20,8 +20,6 @@ pub const STAGES: [(Stage, &str); 6] = [
     (Stage::Finished, "Finished"),
 ];
 
-pub const OPTIONS: [&str; 3] = ["Set live", "Verbose", "Validate"];
-
 pub struct LogLine {
     pub text: String,
     pub error: bool,
@@ -34,7 +32,7 @@ pub struct BuildState {
     pub description: String,
     pub preview_only: bool,
     pub verify: bool,
-    pub options: [bool; 3],
+    pub set_live: bool,
     pub log: VecDeque<LogLine>,
     pub search: String,
     pub stage: Option<Stage>,
@@ -59,6 +57,7 @@ pub struct BuildState {
     pub(super) run_branch: String,
     pub(super) run_desc: String,
     pub(super) run_preview: bool,
+    pub(super) run_set_live: bool,
     pub(super) log_path: Option<PathBuf>,
     pub(super) started: Option<Instant>,
     pub(super) finished_elapsed: Option<Duration>,
@@ -77,7 +76,7 @@ impl BuildState {
             description: String::new(),
             preview_only: false,
             verify: false,
-            options: [false; 3],
+            set_live: true,
             log: VecDeque::new(),
             search: String::new(),
             stage: None,
@@ -100,6 +99,7 @@ impl BuildState {
             run_branch: String::new(),
             run_desc: String::new(),
             run_preview: false,
+            run_set_live: false,
             snapshot: None,
             stage_marks: Vec::new(),
             log_path: None,

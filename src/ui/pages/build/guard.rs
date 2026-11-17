@@ -60,7 +60,7 @@ pub(crate) fn launch(
 }
 
 pub(crate) fn request(app: &mut App, project: &Project, branch: &str, ctx: &egui::Context) {
-    if is_live(project, branch) {
+    if app.build_ui.set_live && is_live(project, branch) {
         app.build_ui.guard.open = true;
         app.build_ui.guard.branch = branch.to_string();
         app.build_ui.guard.typed.clear();

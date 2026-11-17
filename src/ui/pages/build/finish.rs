@@ -28,7 +28,7 @@ fn bump_counter(app: &mut App, record: &BuildRecord) {
 }
 
 fn maybe_reset_checklist(app: &mut App, record: &BuildRecord) {
-    if record.status != BuildStatus::Success {
+    if record.status != BuildStatus::Success || !app.build_ui.run_set_live {
         return;
     }
     if !crate::config::load_settings()
