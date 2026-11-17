@@ -38,8 +38,8 @@ pub fn confirm(ui: &mut egui::Ui, id: egui::Id, spec: &Confirm, s: f32) -> Choic
     let mut choice = Choice::Pending;
     let detail_galley = ui.painter().layout(
         spec.detail.to_string(),
-        FontId::new(px(12.5), theme::family_medium()),
-        theme::INK_MUTED,
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+        theme::ink_muted(),
         px(412.0),
     );
     let height = px(176.0) + detail_galley.size().y;
@@ -57,16 +57,16 @@ pub fn confirm(ui: &mut egui::Ui, id: egui::Id, spec: &Confirm, s: f32) -> Choic
             label(&painter, Pos2::new(x, d.top() + px(26.0)), spec.eyebrow, s);
             let q = painter.layout(
                 spec.question.to_string(),
-                FontId::new(px(16.0), theme::family_semibold()),
-                theme::INK,
+                FontId::new(theme::text_px(16.0, s), theme::family_semibold()),
+                theme::ink(),
                 d.width() - px(56.0),
             );
             let qh = q.size().y;
-            painter.galley(Pos2::new(x, d.top() + px(48.0)), q, theme::INK);
+            painter.galley(Pos2::new(x, d.top() + px(48.0)), q, theme::ink());
             painter.galley(
                 Pos2::new(x, d.top() + px(58.0) + qh),
                 detail_galley,
-                theme::INK_MUTED,
+                theme::ink_muted(),
             );
             let by = d.bottom() - px(26.0) - px(42.0);
             let bw = px(170.0);

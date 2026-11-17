@@ -4,12 +4,44 @@ use eframe::egui::{self, Color32, Id};
 
 static REDUCE_MOTION: AtomicBool = AtomicBool::new(false);
 
+/// The in-app "Reduce motion" setting.
 pub fn set_reduce_motion(on: bool) {
     REDUCE_MOTION.store(on, Ordering::Relaxed);
 }
 
+/// Motion is reduced when the user asked for it in Onyx or turned animations off
+/// for the whole system (Windows: Settings > Accessibility > Visual effects).
 pub fn reduce_motion() -> bool {
-    REDUCE_MOTION.load(Ordering::Relaxed)
+    REDUCE_MOTION.load(Ordering::Relaxed) || os_reduces_motion()
+}
+
+/// True when the operating system asks apps not to animate. Read once per run.
+pub fn os_reduces_motion() -> bool {
+    static OS: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *OS.get_or_init(read_os_setting)
+}
+
+#[cfg(windows)]
+fn read_os_setting() -> bool {
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        SPI_GETCLIENTAREAANIMATION, SystemParametersInfoW,
+    };
+    let mut enabled: i32 = 1;
+    // SAFETY: SPI_GETCLIENTAREAANIMATION writes one BOOL into the pointed-to i32.
+    let ok = unsafe {
+        SystemParametersInfoW(
+            SPI_GETCLIENTAREAANIMATION,
+            0,
+            &mut enabled as *mut i32 as *mut core::ffi::c_void,
+            0,
+        )
+    };
+    ok != 0 && enabled == 0
+}
+
+#[cfg(not(windows))]
+fn read_os_setting() -> bool {
+    false
 }
 
 pub fn dur(seconds: f32) -> f32 {

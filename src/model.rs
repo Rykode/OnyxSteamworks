@@ -236,6 +236,10 @@ pub struct BuildRecord {
     pub git_commit: Option<String>,
     pub manifest_path: Option<PathBuf>,
     pub notes: Option<String>,
+    /// Whether the run was preview-only / set live. `None` for records made before
+    /// these were stored; Rebuild then falls back to the safe choice (preview).
+    pub preview: Option<bool>,
+    pub set_live: Option<bool>,
 }
 
 #[cfg(test)]

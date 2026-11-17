@@ -121,8 +121,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Pos2::new(rect.left(), y),
         Align2::LEFT_TOP,
         "Webhook URL",
-        FontId::new(px(11.5), theme::family_label()),
-        theme::INK_MUTED,
+        FontId::new(theme::text_px(11.5, s), theme::family_label()),
+        theme::ink_muted(),
     );
     let field = Rect::from_min_size(
         Pos2::new(rect.left(), y + px(18.0)),
@@ -166,8 +166,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Pos2::new(rect.left(), status_y),
         Align2::LEFT_TOP,
         status,
-        FontId::new(px(11.5), theme::family_medium()),
-        theme::INK_MUTED,
+        FontId::new(theme::text_px(11.5, s), theme::family_medium()),
+        theme::ink_muted(),
     );
 
     let test = Rect::from_min_size(
@@ -227,7 +227,7 @@ fn toggle_row(
     let px = |v: f32| theme::px(v, s);
     let tog = Rect::from_min_size(Pos2::new(x, *y), Vec2::new(px(44.0), px(24.0)));
     let mut on = *value;
-    if kit::toggle(ui, tog, &mut on, s).changed() {
+    if kit::toggle(ui, tog, &mut on, label, s).changed() {
         *value = on;
         let mut cfg = settings();
         apply(&mut cfg, label, on);
@@ -237,8 +237,8 @@ fn toggle_row(
         Pos2::new(tog.right() + px(12.0), tog.center().y),
         Align2::LEFT_CENTER,
         label,
-        FontId::new(px(12.5), theme::family_medium()),
-        theme::INK_DIM,
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+        theme::ink_dim(),
     );
     *y += px(38.0);
 }

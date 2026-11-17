@@ -34,7 +34,7 @@ fn install(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
         Pos2::new(x, y),
         w,
         "Onyx uploads builds with Valve's SteamCMD. Download it now, or point Onyx at an existing copy.",
-        theme::INK_DIM,
+        theme::ink_dim(),
         s,
     );
     y += px(18.0);
@@ -64,21 +64,21 @@ fn install(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
 
     if let Some(path) = &view.installed {
         check_line(ui, Pos2::new(x, y), true, "SteamCMD is ready", s);
-        para(ui, Pos2::new(x, y + px(24.0)), w, path, theme::INK_MUTED, s);
+        para(ui, Pos2::new(x, y + px(24.0)), w, path, theme::ink_muted(), s);
     } else if view.extracting {
         kit::spinner(
             &ui.painter().clone(),
             Pos2::new(x + px(8.0), y + px(8.0)),
             px(8.0),
-            theme::INK,
+            theme::ink(),
             ui.ctx(),
         );
         ui.painter().text(
             Pos2::new(x + px(26.0), y + px(8.0)),
             Align2::LEFT_CENTER,
             "Extracting SteamCMD…",
-            FontId::new(px(13.0), theme::family_medium()),
-            theme::INK_DIM,
+            FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+            theme::ink_dim(),
         );
     } else if view.downloading {
         let bar = Rect::from_min_size(Pos2::new(x, y + px(4.0)), Vec2::new(w, px(8.0)));
@@ -97,8 +97,8 @@ fn install(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
             Pos2::new(x, bar.bottom() + px(10.0)),
             Align2::LEFT_TOP,
             note,
-            FontId::new(px(12.0), theme::family_medium()),
-            theme::INK_MUTED,
+            FontId::new(theme::text_px(12.0, s), theme::family_medium()),
+            theme::ink_muted(),
         );
     } else {
         let btn = Rect::from_min_size(Pos2::new(x, y), Vec2::new(px(200.0), px(40.0)));
@@ -121,7 +121,7 @@ fn install(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
             Pos2::new(x, rect.bottom() - px(40.0)),
             w,
             &format!("Could not install: {err}"),
-            theme::DANGER,
+            theme::danger(),
             s,
         );
     }
@@ -137,7 +137,7 @@ fn project(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
         Pos2::new(x, y),
         w,
         "Point Onyx at your game's build folder. It detects the engine and prepares depots automatically.",
-        theme::INK_DIM,
+        theme::ink_dim(),
         s,
     );
     y += px(18.0);
@@ -170,15 +170,15 @@ fn project(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
             &ui.painter().clone(),
             Pos2::new(x + px(8.0), y + px(8.0)),
             px(8.0),
-            theme::INK,
+            theme::ink(),
             ui.ctx(),
         );
         ui.painter().text(
             Pos2::new(x + px(26.0), y + px(8.0)),
             Align2::LEFT_CENTER,
             "Scanning folder…",
-            FontId::new(px(13.0), theme::family_medium()),
-            theme::INK_DIM,
+            FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+            theme::ink_dim(),
         );
         return;
     }
@@ -188,7 +188,7 @@ fn project(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
             Pos2::new(x, y),
             w,
             "Choose a folder to let Onyx inspect it.",
-            theme::INK_MUTED,
+            theme::ink_muted(),
             s,
         );
         return;
@@ -198,8 +198,8 @@ fn project(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
     kit::bordered(
         &ui.painter().clone(),
         card,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_FIELD),
     );
     let lines = [
@@ -213,15 +213,15 @@ fn project(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
             Pos2::new(card.left() + px(16.0), ly),
             Align2::LEFT_TOP,
             *k,
-            FontId::new(px(11.0), theme::family_label()),
-            theme::INK_MUTED,
+            FontId::new(theme::text_px(11.0, s), theme::family_label()),
+            theme::ink_muted(),
         );
         ui.painter().text(
             Pos2::new(card.left() + px(110.0), ly),
             Align2::LEFT_TOP,
             v,
-            FontId::new(px(12.5), theme::family_medium()),
-            theme::INK_DIM,
+            FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+            theme::ink_dim(),
         );
     }
     y = card.bottom() + px(18.0);
@@ -250,7 +250,7 @@ fn authorize(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s:
         Pos2::new(x, y),
         w,
         BUILD_ACCOUNT_NOTE,
-        theme::INK_DIM,
+        theme::ink_dim(),
         s,
     );
     y += px(20.0);
@@ -260,16 +260,16 @@ fn authorize(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s:
     kit::bordered(
         &ui.painter().clone(),
         field,
-        theme::FIELD,
-        theme::LINE,
+        theme::field(),
+        theme::line(),
         px(theme::RADIUS_FIELD),
     );
     ui.painter().text(
         Pos2::new(field.left() + px(14.0), field.center().y),
         Align2::LEFT_CENTER,
         &view.account,
-        FontId::new(px(13.0), theme::family_medium()),
-        theme::INK_DIM,
+        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+        theme::ink_dim(),
     );
     y = field.bottom() + px(22.0);
 
@@ -295,7 +295,7 @@ fn authorize(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s:
             Pos2::new(x, btn.bottom() + px(14.0)),
             w,
             "Opens the Build page so you can answer any Steam Guard prompt. SteamCMD caches the login for later builds.",
-            theme::INK_MUTED,
+            theme::ink_muted(),
             s,
         );
     }
@@ -311,7 +311,7 @@ fn finish(ui: &mut egui::Ui, rect: Rect, view: &View, s: f32) {
         Pos2::new(x, y),
         w,
         "You're set. We recommend a preview build first, it validates the whole setup with Steam without publishing anything to players.",
-        theme::INK_DIM,
+        theme::ink_dim(),
         s,
     );
     y += px(22.0);
@@ -344,17 +344,17 @@ fn label(ui: &egui::Ui, pos: Pos2, text: &str, s: f32) {
         pos,
         Align2::LEFT_TOP,
         text,
-        FontId::new(theme::px(11.5, s), theme::family_label()),
-        theme::INK_MUTED,
+        FontId::new(theme::text_px(11.5, s), theme::family_label()),
+        theme::ink_muted(),
     );
 }
 
 fn check_line(ui: &egui::Ui, pos: Pos2, done: bool, text: &str, s: f32) {
     let px = |v: f32| theme::px(v, s);
     let (glyph, color): (char, Color32) = if done {
-        (theme::icon::CHECK, theme::SUCCESS)
+        (theme::icon::CHECK, theme::success())
     } else {
-        (theme::icon::X, theme::INK_MUTED)
+        (theme::icon::X, theme::ink_muted())
     };
     ui.painter().text(
         Pos2::new(pos.x + px(8.0), pos.y + px(8.0)),
@@ -367,11 +367,11 @@ fn check_line(ui: &egui::Ui, pos: Pos2, done: bool, text: &str, s: f32) {
         Pos2::new(pos.x + px(24.0), pos.y + px(8.0)),
         Align2::LEFT_CENTER,
         text,
-        FontId::new(px(13.0), theme::family_medium()),
+        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
         if done {
-            theme::INK_DIM
+            theme::ink_dim()
         } else {
-            theme::INK_MUTED
+            theme::ink_muted()
         },
     );
 }

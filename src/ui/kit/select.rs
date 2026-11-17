@@ -17,6 +17,7 @@ pub fn dropdown(
     ui.skip_ahead_auto_ids(1);
     let resp = ui.interact(rect, id, Sense::click());
     let current = options.get(*selected).copied().unwrap_or("");
+    let selected_idx = *selected;
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::ComboBox, true, current));
     let ctx = ui.ctx().clone();
     let mut open = ctx.data(|d| d.get_temp::<bool>(id.with("open")).unwrap_or(false));
@@ -68,7 +69,7 @@ pub fn dropdown(
     painter.rect_filled(
         rect,
         theme::corner(radius),
-        theme::lerp_color(theme::FIELD, theme::FIELD_HI, hover),
+        theme::lerp_color(theme::field(), theme::field_hi(), hover),
     );
     painter.rect_stroke(
         rect,
@@ -76,9 +77,9 @@ pub fn dropdown(
         Stroke::new(
             1.0,
             if open {
-                theme::with_alpha(theme::ACCENT, 200)
+                theme::with_alpha(theme::accent(), 200)
             } else {
-                theme::LINE
+                theme::field_edge()
             },
         ),
         StrokeKind::Inside,
@@ -88,22 +89,22 @@ pub fn dropdown(
             painter,
             rect.expand(2.0),
             radius + 2.0,
-            theme::with_alpha(theme::FOCUS, 180),
+            theme::with_alpha(theme::focus(), 180),
         );
     }
     painter.text(
         Pos2::new(rect.left() + px(14.0), rect.center().y),
         Align2::LEFT_CENTER,
         current,
-        FontId::new(px(13.0), theme::family_medium()),
-        theme::INK,
+        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+        theme::ink(),
     );
     painter.text(
         Pos2::new(rect.right() - px(16.0), rect.center().y),
         Align2::CENTER_CENTER,
         theme::icon::CARET_DOWN.to_string(),
         theme::icon_font(px(12.0), false),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
 
     let t = anim::anim_bool(&ctx, id.with("anim"), open, 0.13, anim::ease_out_cubic);
@@ -122,12 +123,12 @@ pub fn dropdown(
                 ui.painter().rect_filled(
                     prect,
                     theme::corner(px(theme::RADIUS_POPUP)),
-                    theme::SURFACE_2,
+                    theme::surface_2(),
                 );
                 ui.painter().rect_stroke(
                     prect,
                     theme::corner(px(theme::RADIUS_POPUP)),
-                    Stroke::new(1.0, theme::LINE),
+                    Stroke::new(1.0, theme::line()),
                     StrokeKind::Inside,
                 );
                 let inner = prect.shrink(px(5.0));
@@ -143,6 +144,7 @@ pub fn dropdown(
                                 Vec2::new(inner.width(), row_h),
                                 Sense::click(),
                             );
+                            super::accessible(&r, rr, egui::Role::ListBoxOption, opt, Some(i == selected_idx), px(theme::RADIUS_FIELD));
                             let hot = r.hovered() || i == cursor;
                             let hov = anim::anim_bool(
                                 ui.ctx(),
@@ -157,7 +159,7 @@ pub fn dropdown(
                             ui.painter().rect_filled(
                                 rr,
                                 theme::corner(px(theme::RADIUS_FIELD) - px(1.0)),
-                                theme::lerp_color(theme::SURFACE_2, theme::FIELD_HI, hov),
+                                theme::lerp_color(theme::surface_2(), theme::field_hi(), hov),
                             );
                             let on = i == *selected;
                             if on {
@@ -166,15 +168,15 @@ pub fn dropdown(
                                     Align2::RIGHT_CENTER,
                                     theme::icon::CHECK.to_string(),
                                     theme::icon_font(px(12.0), false),
-                                    theme::INK_DIM,
+                                    theme::ink_dim(),
                                 );
                             }
                             ui.painter().text(
                                 Pos2::new(rr.left() + px(10.0), rr.center().y),
                                 Align2::LEFT_CENTER,
                                 *opt,
-                                FontId::new(px(13.0), theme::family_medium()),
-                                if on { theme::INK } else { theme::INK_DIM },
+                                FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+                                if on { theme::ink() } else { theme::ink_dim() },
                             );
                             if r.clicked() {
                                 *selected = i;
@@ -194,74 +196,3 @@ pub fn dropdown(
     resp
 }
 
-pub fn tabs(
-    ui: &mut egui::Ui,
-    rect: Rect,
-    labels: &[&str],
-    active: &mut usize,
-    s: f32,
-) -> egui::Response {
-    let px = |v: f32| theme::px(v, s);
-    let n = labels.len().max(1);
-    let seg_w = rect.width() / n as f32;
-    let id = ui.make_persistent_id(("tabs", rect.left() as i32, rect.top() as i32));
-    let resp = ui.interact(rect, id, Sense::hover());
-
-    ui.painter().rect_filled(
-        rect,
-        theme::corner(px(theme::RADIUS_FIELD) + px(1.0)),
-        theme::BG,
-    );
-    ui.painter().rect_stroke(
-        rect,
-        theme::corner(px(theme::RADIUS_FIELD) + px(1.0)),
-        Stroke::new(1.0, theme::LINE_SOFT),
-        StrokeKind::Inside,
-    );
-
-    let target = rect.left() + seg_w * (*active as f32);
-    let x = ui
-        .ctx()
-        .animate_value_with_time(id.with("ind"), target, 0.18);
-    let ind = Rect::from_min_size(
-        Pos2::new(x + px(3.0), rect.top() + px(3.0)),
-        Vec2::new(seg_w - px(6.0), rect.height() - px(6.0)),
-    );
-    ui.painter().rect_filled(
-        ind,
-        theme::corner(px(theme::RADIUS_FIELD) - px(1.0)),
-        theme::FIELD_HI,
-    );
-    ui.painter().rect_stroke(
-        ind,
-        theme::corner(px(theme::RADIUS_FIELD) - px(1.0)),
-        Stroke::new(1.0, theme::LINE),
-        StrokeKind::Inside,
-    );
-
-    for (i, lbl) in labels.iter().enumerate() {
-        let seg = Rect::from_min_size(
-            Pos2::new(rect.left() + seg_w * i as f32, rect.top()),
-            Vec2::new(seg_w, rect.height()),
-        );
-        let r = ui.interact(seg, id.with(i), Sense::click());
-        if r.clicked() {
-            *active = i;
-        }
-        let on = i == *active;
-        ui.painter().text(
-            seg.center(),
-            Align2::CENTER_CENTER,
-            *lbl,
-            FontId::new(px(12.5), theme::family_medium()),
-            if on {
-                theme::INK
-            } else if r.hovered() {
-                theme::INK_DIM
-            } else {
-                theme::INK_MUTED
-            },
-        );
-    }
-    resp
-}

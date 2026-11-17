@@ -9,7 +9,7 @@ use crate::ui::theme;
 
 pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
     let px = |v: f32| theme::px(v, s);
-    kit::card_title(ui.painter(), card, "Release checklist", s);
+    kit::card_title(ui, card, "Release checklist", s);
     let items = &app.projects_ui.base.checklist;
     let done = items.iter().filter(|i| i.done).count();
     let count = kit::card_note(
@@ -24,7 +24,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
         Pos2::new(count.left() - px(14.0), count.center().y),
         Align2::RIGHT_CENTER,
         if editing { "Done" } else { "Edit" },
-        if editing { theme::ACCENT_HI } else { theme::INK_FAINT },
+        if editing { theme::accent_hi() } else { theme::ink_faint() },
         s,
     )
     .clicked()
@@ -62,8 +62,8 @@ fn view_list(app: &mut App, ui: &mut egui::Ui, s: f32) {
             Pos2::new(r.left(), r.center().y),
             Align2::LEFT_CENTER,
             "No items yet.",
-            FontId::new(px(13.0), theme::family_medium()),
-            theme::INK_FAINT,
+            FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+            theme::ink_faint(),
         );
         let r = row(ui, s, 24.0);
         if kit::link(
@@ -71,7 +71,7 @@ fn view_list(app: &mut App, ui: &mut egui::Ui, s: f32) {
             Pos2::new(r.left(), r.center().y),
             Align2::LEFT_CENTER,
             "Load the default template",
-            theme::ACCENT_HI,
+            theme::accent_hi(),
             s,
         )
         .clicked()
@@ -89,12 +89,12 @@ fn view_list(app: &mut App, ui: &mut egui::Ui, s: f32) {
         if kit::checkbox(ui, hit, &mut done, &item.text, s).changed() {
             item.done = done;
         }
-        let color = if item.done { theme::INK_MUTED } else { theme::INK_DIM };
+        let color = if item.done { theme::ink_muted() } else { theme::ink_dim() };
         let text_rect = ui.painter().text(
             Pos2::new(r.left() + px(29.0), r.center().y),
             Align2::LEFT_CENTER,
             &item.text,
-            FontId::new(px(14.0), theme::family_medium()),
+            FontId::new(theme::text_px(14.0, s), theme::family_medium()),
             color,
         );
         if item.done {
@@ -122,12 +122,23 @@ fn edit_list(app: &mut App, ui: &mut egui::Ui, s: f32) {
             Pos2::new(field.right() + px(6.0), field.top() + px(2.0)),
             Vec2::splat(px(30.0)),
         );
-        if kit::icon_button(ui, xz, theme::icon::TRASH, s).clicked() {
+        if kit::icon_button(ui, xz, theme::icon::TRASH, "Remove checklist item", s).clicked() {
             remove = Some(i);
         }
     }
-    if let Some(i) = remove {
-        app.projects_ui.base.checklist.remove(i);
+    if let Some(i) = remove
+        && i < app.projects_ui.base.checklist.len()
+    {
+        let item = app.projects_ui.base.checklist.remove(i);
+        let owner = app.projects_ui.selected.clone();
+        app.offer_undo("Removed checklist item", move |app| {
+            if app.projects_ui.selected != owner {
+                return Err("Can't undo: a different project is open".to_string());
+            }
+            let list = &mut app.projects_ui.base.checklist;
+            list.insert(i.min(list.len()), item);
+            Ok(())
+        });
     }
     ui.add_space(px(4.0));
     let r = row(ui, s, 34.0);
@@ -157,7 +168,7 @@ fn edit_list(app: &mut App, ui: &mut egui::Ui, s: f32) {
     let tog = Rect::from_min_size(tr.min, Vec2::new(px(40.0), px(22.0)));
     let mut cfg = crate::config::load_settings().unwrap_or_default();
     let mut reset_on = cfg.checklist_reset_on_live;
-    if kit::toggle(ui, tog, &mut reset_on, s).changed() {
+    if kit::toggle(ui, tog, &mut reset_on, "Reset after each Live build", s).changed() {
         cfg.checklist_reset_on_live = reset_on;
         if let Err(e) = crate::config::save_settings(&cfg) {
             crate::config::report_problem(format!("Could not save settings: {e}"));
@@ -167,7 +178,7 @@ fn edit_list(app: &mut App, ui: &mut egui::Ui, s: f32) {
         Pos2::new(tog.right() + px(10.0), tog.center().y),
         Align2::LEFT_CENTER,
         "Reset after each Live build",
-        FontId::new(px(12.5), theme::family_medium()),
-        theme::INK_DIM,
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+        theme::ink_dim(),
     );
 }

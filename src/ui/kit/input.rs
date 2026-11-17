@@ -7,6 +7,7 @@ use crate::ui::{anim, kit, theme};
 pub struct Input<'a> {
     text: &'a mut String,
     hint: &'a str,
+    label: Option<&'a str>,
     error: bool,
     helper: Option<&'a str>,
     mask: bool,
@@ -21,6 +22,7 @@ impl<'a> Input<'a> {
         Self {
             text,
             hint: "",
+            label: None,
             error: false,
             helper: None,
             mask: false,
@@ -33,6 +35,13 @@ impl<'a> Input<'a> {
 
     pub fn hint(mut self, hint: &'a str) -> Self {
         self.hint = hint;
+        self
+    }
+
+    /// Accessible name when the visible label is drawn outside the field.
+    /// Without it, screen readers use the hint text.
+    pub fn label(mut self, label: &'a str) -> Self {
+        self.label = Some(label);
         self
     }
 
@@ -95,7 +104,7 @@ impl<'a> Input<'a> {
             0.0
         };
         let field = rect;
-        let fill = theme::lerp_color(theme::SURFACE_2, theme::DANGER, flash * 0.12);
+        let fill = theme::lerp_color(theme::surface_2(), theme::danger(), flash * 0.12);
 
         kit::surface(&ui.painter().clone(), field, fill, radius);
 
@@ -112,13 +121,13 @@ impl<'a> Input<'a> {
                 Align2::CENTER_CENTER,
                 glyph.to_string(),
                 theme::icon_font(px(13.0), false),
-                theme::INK_FAINT,
+                theme::ink_faint(),
             );
         }
         let font = if self.mono {
-            FontId::new(px(12.5), egui::FontFamily::Monospace)
+            FontId::new(theme::text_px(12.5, s), egui::FontFamily::Monospace)
         } else {
-            FontId::new(px(13.0), theme::family_medium())
+            FontId::new(theme::text_px(13.0, s), theme::family_medium())
         };
 
         let resp = if self.readonly {
@@ -129,9 +138,9 @@ impl<'a> Input<'a> {
                 self.text.as_str()
             };
             let color = if self.text.is_empty() {
-                theme::INK_FAINT
+                theme::ink_faint()
             } else {
-                theme::INK_DIM
+                theme::ink_dim()
             };
             let text = tail_fit(painter, shown, &font, inner.width());
             let clipped = text != shown;
@@ -158,28 +167,33 @@ impl<'a> Input<'a> {
                     .margin(egui::Margin::ZERO)
                     .align(Align2::LEFT_CENTER)
                     .password(self.mask)
-                    .hint_text(egui::RichText::new(self.hint).font(font.clone()).color(theme::INK_FAINT))
+                    .hint_text(egui::RichText::new(self.hint).font(font.clone()).color(theme::ink_faint()))
                     .font(font)
-                    .text_color(theme::INK)
+                    .text_color(theme::ink())
                     .desired_width(f32::INFINITY),
             )
         };
 
+        let name = self.label.unwrap_or(self.hint);
+        if !name.is_empty() {
+            ui.ctx().accesskit_node_builder(resp.id, |node| node.set_label(name));
+        }
+
         let border = if self.error {
-            theme::DANGER
+            theme::danger()
         } else if resp.has_focus() {
-            theme::ACCENT
+            theme::accent()
         } else if resp.hovered() {
-            theme::FIELD_HI
+            theme::ink_faint()
         } else {
-            theme::LINE
+            theme::field_edge()
         };
         let width = if self.error { 1.0 + flash * 0.75 } else { 1.0 };
         if resp.has_focus() && !self.error {
             ui.painter().rect_stroke(
                 field.expand(2.0),
                 theme::corner(radius + 2.0),
-                Stroke::new(2.0, theme::with_alpha(theme::ACCENT, 60)),
+                Stroke::new(2.0, theme::with_alpha(theme::accent(), 60)),
                 StrokeKind::Inside,
             );
         }
@@ -192,15 +206,15 @@ impl<'a> Input<'a> {
 
         if let Some(helper) = self.helper {
             let color = if self.error {
-                theme::DANGER
+                theme::danger()
             } else {
-                theme::INK_MUTED
+                theme::ink_muted()
             };
             ui.painter().text(
                 Pos2::new(field.left() + px(2.0), field.bottom() + px(5.0)),
                 Align2::LEFT_TOP,
                 helper,
-                FontId::new(px(11.5), theme::family_medium()),
+                FontId::new(theme::text_px(11.5, s), theme::family_medium()),
                 color,
             );
         }
@@ -211,7 +225,7 @@ impl<'a> Input<'a> {
 pub(crate) fn head_fit(painter: &egui::Painter, text: &str, font: &FontId, max_w: f32) -> String {
     let width = |t: &str| {
         painter
-            .layout_no_wrap(t.to_owned(), font.clone(), theme::INK)
+            .layout_no_wrap(t.to_owned(), font.clone(), theme::ink())
             .size()
             .x
     };
@@ -236,7 +250,7 @@ pub(crate) fn head_fit(painter: &egui::Painter, text: &str, font: &FontId, max_w
 pub(crate) fn tail_fit(painter: &egui::Painter, text: &str, font: &FontId, max_w: f32) -> String {
     let width = |t: &str| {
         painter
-            .layout_no_wrap(t.to_owned(), font.clone(), theme::INK)
+            .layout_no_wrap(t.to_owned(), font.clone(), theme::ink())
             .size()
             .x
     };

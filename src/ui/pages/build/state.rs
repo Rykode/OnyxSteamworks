@@ -133,6 +133,16 @@ impl BuildState {
             .join("\n")
     }
 
+    /// Only the lines flagged as errors, with their timestamps, for pasting into a report.
+    pub fn error_text(&self) -> String {
+        self.log
+            .iter()
+            .filter(|l| l.error)
+            .map(|l| format!("{} {}", l.time, l.text))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
     pub fn elapsed(&self) -> Duration {
         if self.running {
             self.started.map(|t| t.elapsed()).unwrap_or_default()
@@ -165,12 +175,6 @@ impl BuildState {
                 .unwrap_or(start),
         };
         Some(end.saturating_duration_since(start))
-    }
-
-    pub fn stage_name(&self) -> &'static str {
-        self.stage
-            .and_then(|st| STAGES.iter().find(|(s, _)| *s == st).map(|(_, n)| *n))
-            .unwrap_or("Idle")
     }
 
     pub fn drain(&mut self, ctx: &egui::Context) -> Option<BuildResult> {
@@ -243,6 +247,8 @@ impl BuildState {
                             log.as_path(),
                         );
                         record.git_commit = crate::features::patchnotes::head_commit(&project);
+                        record.preview = Some(self.run_preview);
+                        record.set_live = Some(self.run_set_live);
                         if status == BuildStatus::Success {
                             record.manifest_path = self.pending_manifest_path.take();
                         } else {

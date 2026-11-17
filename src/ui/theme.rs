@@ -5,41 +5,225 @@ use eframe::egui::{
     Stroke, StrokeKind, TextStyle,
 };
 
-pub const BG: Color32 = Color32::from_rgb(0x17, 0x18, 0x1C);
-pub const SIDEBAR: Color32 = BG;
-pub const SURFACE: Color32 = Color32::from_rgb(0x21, 0x22, 0x28);
-pub const SURFACE_2: Color32 = Color32::from_rgb(0x29, 0x2B, 0x32);
-pub const FIELD: Color32 = Color32::from_rgb(0x27, 0x28, 0x2E);
-pub const FIELD_HI: Color32 = Color32::from_rgb(0x30, 0x32, 0x3A);
-pub const LINE: Color32 = Color32::from_rgb(0x3A, 0x3D, 0x46);
-pub const LINE_SOFT: Color32 = Color32::from_rgb(0x2C, 0x2E, 0x36);
-pub const WELL: Color32 = Color32::from_rgb(0x12, 0x14, 0x16);
+/// Every colour the UI paints with, for one appearance. The UI reads the active set
+/// through the functions below (`theme::ink()` etc.), so switching theme is one store.
+#[derive(Clone, Copy)]
+pub struct Palette {
+    pub bg: Color32,
+    pub sidebar: Color32,
+    pub surface: Color32,
+    pub surface_2: Color32,
+    pub field: Color32,
+    pub field_hi: Color32,
+    pub line: Color32,
+    /// Resting outline of text boxes and dropdowns: >= 3:1 against SURFACE and SURFACE_2
+    /// (WCAG 1.4.11), because the field fill alone is nearly invisible on a card.
+    pub field_edge: Color32,
+    pub line_soft: Color32,
+    pub well: Color32,
+    pub ink: Color32,
+    pub ink_dim: Color32,
+    pub ink_muted: Color32,
+    /// Lowest text tier. Must stay >= 4.5:1 on BG, SURFACE, SURFACE_2 and FIELD (WCAG 1.4.3).
+    pub ink_faint: Color32,
+    pub accent: Color32,
+    /// Also used as link / emphasis text, so >= 4.5:1 like the ink tiers.
+    pub accent_hi: Color32,
+    pub primary_ink: Color32,
+    /// Primary button fills carry PRIMARY_INK text, so both keep >= 4.5:1 against it.
+    /// ACCENT stays brighter for non-text marks (toggles, progress, focus) that need 3:1.
+    pub primary: Color32,
+    pub primary_hi: Color32,
+    pub focus: Color32,
+    pub segment_idle: Color32,
+    pub track: Color32,
+    /// SUCCESS, WARNING and DANGER are used as text: >= 4.5:1 on BG, SURFACE, SURFACE_2, FIELD.
+    pub success: Color32,
+    pub warning: Color32,
+    pub danger: Color32,
+    /// Text on DANGER-tinted fills (danger buttons), where DANGER itself can drop below 4.5:1.
+    pub danger_ink: Color32,
+}
 
-pub const INK: Color32 = Color32::from_rgb(0xF4, 0xF5, 0xF7);
-pub const INK_DIM: Color32 = Color32::from_rgb(0xC9, 0xCF, 0xDA);
-pub const INK_MUTED: Color32 = Color32::from_rgb(0x9A, 0xA3, 0xB2);
-// Lowest text tier. Must stay >= 4.5:1 on BG, SURFACE, SURFACE_2 and FIELD (WCAG 1.4.3).
-pub const INK_FAINT: Color32 = Color32::from_rgb(0x8A, 0x93, 0xA3);
+const fn rgb(r: u8, g: u8, b: u8) -> Color32 {
+    Color32::from_rgb(r, g, b)
+}
 
-pub const ACCENT: Color32 = Color32::from_rgb(0x4F, 0x7C, 0xFF);
-pub const ACCENT_HI: Color32 = Color32::from_rgb(0x7A, 0xA0, 0xFF);
+pub const DARK: Palette = Palette {
+    bg: rgb(0x17, 0x18, 0x1C),
+    sidebar: rgb(0x17, 0x18, 0x1C),
+    surface: rgb(0x21, 0x22, 0x28),
+    surface_2: rgb(0x29, 0x2B, 0x32),
+    field: rgb(0x27, 0x28, 0x2E),
+    field_hi: rgb(0x30, 0x32, 0x3A),
+    line: rgb(0x3A, 0x3D, 0x46),
+    field_edge: rgb(0x6F, 0x76, 0x85),
+    line_soft: rgb(0x2C, 0x2E, 0x36),
+    well: rgb(0x12, 0x14, 0x16),
+    ink: rgb(0xF4, 0xF5, 0xF7),
+    ink_dim: rgb(0xC9, 0xCF, 0xDA),
+    ink_muted: rgb(0x9A, 0xA3, 0xB2),
+    ink_faint: rgb(0x8A, 0x93, 0xA3),
+    accent: rgb(0x4F, 0x7C, 0xFF),
+    accent_hi: rgb(0x7A, 0xA0, 0xFF),
+    primary_ink: rgb(0xFF, 0xFF, 0xFF),
+    primary: rgb(0x3F, 0x66, 0xE0),
+    primary_hi: rgb(0x45, 0x69, 0xE0),
+    focus: rgb(0x4F, 0x7C, 0xFF),
+    segment_idle: rgb(0x34, 0x36, 0x3E),
+    track: rgb(0x2C, 0x2E, 0x36),
+    success: rgb(0x2F, 0xBF, 0x71),
+    warning: rgb(0xF0, 0xB1, 0x32),
+    danger: rgb(0xF5, 0x68, 0x6D),
+    danger_ink: rgb(0xFF, 0x82, 0x85),
+};
 
-pub const PRIMARY_INK: Color32 = Color32::from_rgb(0xFF, 0xFF, 0xFF);
-// Primary button fills carry PRIMARY_INK text, so both keep >= 4.5:1 against white.
-// ACCENT stays brighter for non-text marks (toggles, progress, focus) that need 3:1.
-pub const PRIMARY: Color32 = Color32::from_rgb(0x3F, 0x66, 0xE0);
-pub const PRIMARY_HI: Color32 = Color32::from_rgb(0x45, 0x69, 0xE0);
-pub const FOCUS: Color32 = Color32::from_rgb(0x4F, 0x7C, 0xFF);
+/// Light appearance. Contrast was checked against the same rules as DARK
+/// (text tiers >= 4.5:1 on bg/surface/surface_2/field, field_edge >= 3:1).
+pub const LIGHT: Palette = Palette {
+    bg: rgb(0xEE, 0xF0, 0xF4),
+    sidebar: rgb(0xEE, 0xF0, 0xF4),
+    surface: rgb(0xFF, 0xFF, 0xFF),
+    surface_2: rgb(0xF6, 0xF7, 0xF9),
+    field: rgb(0xF1, 0xF3, 0xF6),
+    field_hi: rgb(0xE6, 0xE9, 0xEF),
+    line: rgb(0xD5, 0xD9, 0xE1),
+    field_edge: rgb(0x7A, 0x83, 0x93),
+    line_soft: rgb(0xE3, 0xE6, 0xEC),
+    well: rgb(0xF4, 0xF5, 0xF8),
+    ink: rgb(0x16, 0x18, 0x1D),
+    ink_dim: rgb(0x34, 0x3A, 0x46),
+    ink_muted: rgb(0x53, 0x5B, 0x69),
+    ink_faint: rgb(0x5F, 0x67, 0x74),
+    accent: rgb(0x3F, 0x66, 0xE0),
+    accent_hi: rgb(0x2F, 0x55, 0xCC),
+    primary_ink: rgb(0xFF, 0xFF, 0xFF),
+    primary: rgb(0x3F, 0x66, 0xE0),
+    primary_hi: rgb(0x34, 0x59, 0xCF),
+    focus: rgb(0x3F, 0x66, 0xE0),
+    segment_idle: rgb(0xD9, 0xDD, 0xE4),
+    track: rgb(0xE3, 0xE6, 0xEC),
+    success: rgb(0x16, 0x6E, 0x3D),
+    warning: rgb(0x8F, 0x5B, 0x00),
+    danger: rgb(0xC4, 0x2E, 0x34),
+    danger_ink: rgb(0xB3, 0x26, 0x2B),
+};
 
-pub const SEGMENT_IDLE: Color32 = Color32::from_rgb(0x34, 0x36, 0x3E);
-pub const TRACK: Color32 = Color32::from_rgb(0x2C, 0x2E, 0x36);
+static LIGHT_ACTIVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static MODE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
 
-pub const SUCCESS: Color32 = Color32::from_rgb(0x2F, 0xBF, 0x71);
-pub const WARNING: Color32 = Color32::from_rgb(0xF0, 0xB1, 0x32);
-// >= 4.5:1 as text on BG, SURFACE, SURFACE_2 and FIELD.
-pub const DANGER: Color32 = Color32::from_rgb(0xF5, 0x68, 0x6D);
-// Text on DANGER-tinted fills (danger buttons), where DANGER itself drops below 4.5:1.
-pub const DANGER_INK: Color32 = Color32::from_rgb(0xFF, 0x82, 0x85);
+/// The palette currently in use.
+pub fn palette() -> &'static Palette {
+    if is_light() { &LIGHT } else { &DARK }
+}
+
+pub fn is_light() -> bool {
+    LIGHT_ACTIVE.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+pub fn bg() -> Color32 {
+    palette().bg
+}
+
+pub fn sidebar() -> Color32 {
+    palette().sidebar
+}
+
+pub fn surface() -> Color32 {
+    palette().surface
+}
+
+pub fn surface_2() -> Color32 {
+    palette().surface_2
+}
+
+pub fn field() -> Color32 {
+    palette().field
+}
+
+pub fn field_hi() -> Color32 {
+    palette().field_hi
+}
+
+pub fn line() -> Color32 {
+    palette().line
+}
+
+pub fn field_edge() -> Color32 {
+    palette().field_edge
+}
+
+pub fn line_soft() -> Color32 {
+    palette().line_soft
+}
+
+pub fn well() -> Color32 {
+    palette().well
+}
+
+pub fn ink() -> Color32 {
+    palette().ink
+}
+
+pub fn ink_dim() -> Color32 {
+    palette().ink_dim
+}
+
+pub fn ink_muted() -> Color32 {
+    palette().ink_muted
+}
+
+pub fn ink_faint() -> Color32 {
+    palette().ink_faint
+}
+
+pub fn accent() -> Color32 {
+    palette().accent
+}
+
+pub fn accent_hi() -> Color32 {
+    palette().accent_hi
+}
+
+pub fn primary_ink() -> Color32 {
+    palette().primary_ink
+}
+
+pub fn primary() -> Color32 {
+    palette().primary
+}
+
+pub fn primary_hi() -> Color32 {
+    palette().primary_hi
+}
+
+pub fn focus() -> Color32 {
+    palette().focus
+}
+
+pub fn segment_idle() -> Color32 {
+    palette().segment_idle
+}
+
+pub fn track() -> Color32 {
+    palette().track
+}
+
+pub fn success() -> Color32 {
+    palette().success
+}
+
+pub fn warning() -> Color32 {
+    palette().warning
+}
+
+pub fn danger() -> Color32 {
+    palette().danger
+}
+
+pub fn danger_ink() -> Color32 {
+    palette().danger_ink
+}
 
 pub const RADIUS_APP: f32 = 12.0;
 pub const RADIUS_PANEL: f32 = 18.0;
@@ -73,6 +257,15 @@ pub fn scale(available: egui::Vec2) -> f32 {
 
 pub fn px(value: f32, scale: f32) -> f32 {
     value * scale
+}
+
+/// Smallest rendered text size, in logical px. Layout keeps shrinking with small
+/// windows (down to SCALE_MIN), but text stops here so it stays readable.
+const MIN_TEXT_PX: f32 = 11.0;
+
+/// Text size for a design size at the current scale, floored at MIN_TEXT_PX.
+pub fn text_px(size: f32, scale: f32) -> f32 {
+    (size * scale).max(MIN_TEXT_PX)
 }
 
 pub fn corner(radius_px: f32) -> CornerRadius {
@@ -250,26 +443,27 @@ fn text_styles() -> std::collections::BTreeMap<TextStyle, FontId> {
 }
 
 fn build_visuals() -> egui::Visuals {
-    let mut v = egui::Visuals::dark();
-    v.dark_mode = true;
-    v.override_text_color = Some(INK);
+    let light = is_light();
+    let mut v = if light { egui::Visuals::light() } else { egui::Visuals::dark() };
+    v.dark_mode = !light;
+    v.override_text_color = Some(ink());
 
-    v.panel_fill = BG;
-    v.window_fill = SURFACE;
-    v.window_stroke = Stroke::new(1.0, LINE);
-    v.extreme_bg_color = FIELD;
-    v.faint_bg_color = SURFACE_2;
-    v.code_bg_color = FIELD;
-    v.hyperlink_color = INK;
+    v.panel_fill = bg();
+    v.window_fill = surface();
+    v.window_stroke = Stroke::new(1.0, line());
+    v.extreme_bg_color = field();
+    v.faint_bg_color = surface_2();
+    v.code_bg_color = field();
+    v.hyperlink_color = ink();
 
-    v.selection.bg_fill = with_alpha(ACCENT, 90);
-    v.selection.stroke = Stroke::new(1.0, ACCENT_HI);
-    v.text_cursor.stroke = Stroke::new(1.5, ACCENT_HI);
+    v.selection.bg_fill = with_alpha(accent(), 90);
+    v.selection.stroke = Stroke::new(1.0, accent_hi());
+    v.text_cursor.stroke = Stroke::new(1.5, accent_hi());
     v.popup_shadow = egui::epaint::Shadow {
         offset: [0, 8],
         blur: 24,
         spread: 0,
-        color: Color32::from_black_alpha(140),
+        color: Color32::from_black_alpha(if light { 60 } else { 140 }),
     };
     v.window_shadow = v.popup_shadow;
     v.window_corner_radius = corner(RADIUS_POPUP);
@@ -283,18 +477,18 @@ fn build_visuals() -> egui::Visuals {
         &mut v.widgets.open,
     ] {
         w.bg_stroke = Stroke::NONE;
-        w.fg_stroke = Stroke::new(1.0, INK);
+        w.fg_stroke = Stroke::new(1.0, ink());
         w.corner_radius = corner(RADIUS_FIELD);
         w.expansion = 0.0;
     }
-    v.widgets.noninteractive.bg_fill = SURFACE;
-    v.widgets.noninteractive.weak_bg_fill = SURFACE;
-    v.widgets.inactive.bg_fill = FIELD;
-    v.widgets.inactive.weak_bg_fill = FIELD;
-    v.widgets.hovered.bg_fill = FIELD_HI;
-    v.widgets.hovered.weak_bg_fill = FIELD_HI;
-    v.widgets.active.bg_fill = FIELD_HI;
-    v.widgets.active.weak_bg_fill = FIELD_HI;
+    v.widgets.noninteractive.bg_fill = surface();
+    v.widgets.noninteractive.weak_bg_fill = surface();
+    v.widgets.inactive.bg_fill = field();
+    v.widgets.inactive.weak_bg_fill = field();
+    v.widgets.hovered.bg_fill = field_hi();
+    v.widgets.hovered.weak_bg_fill = field_hi();
+    v.widgets.active.bg_fill = field_hi();
+    v.widgets.active.weak_bg_fill = field_hi();
     v
 }
 
@@ -306,4 +500,33 @@ pub fn apply_theme(ctx: &egui::Context) {
         style.text_styles = styles.clone();
         style.visuals = visuals.clone();
     });
+}
+
+fn mode_code(mode: crate::config::ThemeMode) -> u8 {
+    match mode {
+        crate::config::ThemeMode::Dark => 0,
+        crate::config::ThemeMode::Light => 1,
+        crate::config::ThemeMode::System => 2,
+    }
+}
+
+/// Choose dark, light or follow-the-system, and apply it now.
+pub fn set_mode(ctx: &egui::Context, mode: crate::config::ThemeMode) {
+    MODE.store(mode_code(mode), std::sync::atomic::Ordering::Relaxed);
+    sync(ctx);
+}
+
+/// Re-resolve "System" against the OS setting (cheap; called every frame) and
+/// re-apply the egui visuals when the effective appearance changed.
+pub fn sync(ctx: &egui::Context) {
+    let light = match MODE.load(std::sync::atomic::Ordering::Relaxed) {
+        1 => true,
+        2 => ctx.system_theme() == Some(egui::Theme::Light),
+        _ => false,
+    };
+    if LIGHT_ACTIVE.swap(light, std::sync::atomic::Ordering::Relaxed) != light {
+        let visuals = build_visuals();
+        ctx.all_styles_mut(|style| style.visuals = visuals.clone());
+        ctx.request_repaint();
+    }
 }

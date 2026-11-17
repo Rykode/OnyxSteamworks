@@ -63,7 +63,19 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &e
         }
         Some(Action::Up(i)) => app.pipeline_ui.move_step(i, true),
         Some(Action::Down(i)) => app.pipeline_ui.move_step(i, false),
-        Some(Action::Delete(i)) => app.pipeline_ui.remove_step(i),
+        Some(Action::Delete(i)) => {
+            let owner = app.pipeline_ui.draft.id.clone();
+            let pipe = app.pipeline_ui.current().map(|p| p.id.clone());
+            if let (Some(step), Some(pipe)) = (app.pipeline_ui.remove_step(i), pipe) {
+                let label = if step.name.trim().is_empty() { "step".to_string() } else { step.name.clone() };
+                app.offer_undo(format!("Removed {label}"), move |app| {
+                    if app.pipeline_ui.draft.id != owner || !app.pipeline_ui.insert_step(&pipe, i, step) {
+                        return Err("Can't undo: that pipeline is no longer open".to_string());
+                    }
+                    Ok(())
+                });
+            }
+        }
         Some(Action::RunFrom(i)) => app.pipeline_ui.start(ctx, i),
         None => {}
     }
@@ -91,8 +103,8 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
     kit::bordered(
         &ui.painter().clone(),
         rect,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_CARD),
     );
 
@@ -104,7 +116,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
                 Pos2::new(icon_c.x, rect.bottom() - px(6.0)),
                 Pos2::new(icon_c.x, rect.bottom() + px(10.0)),
             ],
-            Stroke::new(1.0, theme::LINE),
+            Stroke::new(1.0, theme::line()),
         );
     }
 
@@ -119,16 +131,16 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
         Pos2::new(tx, rect.top() + if same { px(27.0) } else { px(18.0) }),
         Align2::LEFT_CENTER,
         &name,
-        FontId::new(px(13.5), theme::family_semibold()),
-        theme::INK,
+        FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
+        theme::ink(),
     );
     if !same {
         ui.painter().text(
             Pos2::new(tx, rect.top() + px(36.0)),
             Align2::LEFT_CENTER,
             &detail,
-            FontId::new(px(11.5), theme::family_medium()),
-            theme::INK_MUTED,
+            FontId::new(theme::text_px(11.5, s), theme::family_medium()),
+            theme::ink_muted(),
         );
     }
 
@@ -143,6 +155,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
         ui,
         Rect::from_min_size(Pos2::new(rx, by), Vec2::new(bw, px(34.0))),
         theme::icon::TRASH,
+        "Delete step",
         s,
     )
     .clicked()
@@ -154,6 +167,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
         ui,
         Rect::from_min_size(Pos2::new(rx, by), Vec2::new(bw, px(34.0))),
         theme::icon::CARET_DOWN,
+        "Show step settings",
         s,
     )
     .clicked()
@@ -189,6 +203,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
         ui,
         Rect::from_min_size(Pos2::new(rx, by), Vec2::new(bw, px(34.0))),
         theme::icon::PLAY,
+        "Run from this step",
         s,
     )
     .clicked()
@@ -203,6 +218,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
         ui,
         Rect::from_min_size(Pos2::new(rx, by + px(5.0)), Vec2::new(px(42.0), px(22.0))),
         &mut enabled,
+        "Step enabled",
         s,
     )
     .clicked()
@@ -226,28 +242,28 @@ pub(super) fn status_icon(ui: &mut egui::Ui, c: Pos2, r: f32, status: StepRunSta
     let painter = ui.painter();
     match status {
         StepRunStatus::Idle | StepRunStatus::Pending => {
-            painter.circle_stroke(c, r, Stroke::new(1.5, theme::INK_MUTED));
+            painter.circle_stroke(c, r, Stroke::new(1.5, theme::ink_muted()));
         }
         StepRunStatus::Running => {
-            painter.circle_filled(c, r, theme::INK);
+            painter.circle_filled(c, r, theme::ink());
             painter.circle_stroke(
                 c,
                 r + 2.5,
-                Stroke::new(1.0, theme::with_alpha(theme::INK, 80)),
+                Stroke::new(1.0, theme::with_alpha(theme::ink(), 80)),
             );
         }
         StepRunStatus::Success => {
-            painter.circle_filled(c, r, theme::SUCCESS);
-            check(painter, c, r, theme::PRIMARY_INK);
+            painter.circle_filled(c, r, theme::success());
+            check(painter, c, r, theme::primary_ink());
         }
         StepRunStatus::Failed => {
-            painter.circle_filled(c, r, theme::DANGER);
-            cross(painter, c, r * 0.5, theme::PRIMARY_INK);
+            painter.circle_filled(c, r, theme::danger());
+            cross(painter, c, r * 0.5, theme::primary_ink());
         }
         StepRunStatus::Skipped => {
             painter.line_segment(
                 [Pos2::new(c.x - r, c.y), Pos2::new(c.x + r, c.y)],
-                Stroke::new(1.5, theme::INK_MUTED),
+                Stroke::new(1.5, theme::ink_muted()),
             );
         }
     }

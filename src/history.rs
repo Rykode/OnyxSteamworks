@@ -82,6 +82,8 @@ const MIGRATIONS: &[&str] = &[
         );
         CREATE INDEX IF NOT EXISTS idx_runs_started ON pipeline_runs(started_ms);",
     "CREATE INDEX IF NOT EXISTS idx_builds_project ON builds(project_id, timestamp);",
+    "ALTER TABLE builds ADD COLUMN preview INTEGER;
+        ALTER TABLE builds ADD COLUMN set_live INTEGER;",
 ];
 
 fn init(conn: &Connection) -> Result<()> {
@@ -127,8 +129,8 @@ pub fn insert(conn: &Connection, record: &BuildRecord) -> Result<()> {
     conn.execute(
         "INSERT OR REPLACE INTO builds
             (id, project_id, timestamp, description, branch, status, duration_ms,
-             log_path, settings_json, git_commit, manifest_path, notes)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+             log_path, settings_json, git_commit, manifest_path, notes, preview, set_live)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
         params![
             record.id,
             record.project_id,
@@ -145,6 +147,8 @@ pub fn insert(conn: &Connection, record: &BuildRecord) -> Result<()> {
                 .as_ref()
                 .map(|p| p.to_string_lossy().to_string()),
             record.notes,
+            record.preview,
+            record.set_live,
         ],
     )?;
     Ok(())
@@ -164,13 +168,15 @@ fn row_to_record(row: &rusqlite::Row) -> rusqlite::Result<BuildRecord> {
         git_commit: row.get(9)?,
         manifest_path: row.get::<_, Option<String>>(10)?.map(PathBuf::from),
         notes: row.get(11)?,
+        preview: row.get(12)?,
+        set_live: row.get(13)?,
     })
 }
 
 pub fn all(conn: &Connection) -> Result<Vec<BuildRecord>> {
     let mut stmt = conn.prepare(
         "SELECT id, project_id, timestamp, description, branch, status, duration_ms,
-                log_path, settings_json, git_commit, manifest_path, notes
+                log_path, settings_json, git_commit, manifest_path, notes, preview, set_live
          FROM builds ORDER BY timestamp DESC",
     )?;
     let rows = stmt.query_map([], row_to_record)?;
@@ -246,6 +252,7 @@ pub fn save_upload(
 ) -> std::result::Result<(), String> {
     let mut record = make_record(project, branch, description, status, duration_ms, log_path);
     record.git_commit = crate::features::patchnotes::head_commit(project);
+    record.preview = Some(preview);
     let conn = connect().map_err(|e| e.to_string())?;
     insert(&conn, &record).map_err(|e| e.to_string())?;
     if status == BuildStatus::Success && !preview {
@@ -275,6 +282,8 @@ pub fn make_record(
         git_commit: None,
         manifest_path: None,
         notes: None,
+        preview: None,
+        set_live: None,
     }
 }
 

@@ -120,9 +120,9 @@ impl DoctorState {
 
 fn status_color(status: Status) -> egui::Color32 {
     match status {
-        Status::Ok => theme::SUCCESS,
-        Status::Warn => theme::WARNING,
-        Status::Fail => theme::DANGER,
+        Status::Ok => theme::success(),
+        Status::Warn => theme::warning(),
+        Status::Fail => theme::danger(),
     }
 }
 
@@ -150,7 +150,7 @@ fn spinner(painter: &egui::Painter, center: Pos2, radius: f32, s: f32, time: f64
         .collect();
     painter.add(Shape::line(
         points,
-        Stroke::new(theme::px(2.5, s), theme::INK_MUTED),
+        Stroke::new(theme::px(2.5, s), theme::ink_muted()),
     ));
 }
 
@@ -175,7 +175,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, body: Rect, s: f32) {
     let ring_color = if all_done {
         status_color(overall)
     } else {
-        theme::INK_MUTED
+        theme::ink_muted()
     };
 
     let ring_c = Pos2::new(body.left() + px(34.0), body.top() + px(34.0));
@@ -191,8 +191,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, body: Rect, s: f32) {
         ring_c,
         Align2::CENTER_CENTER,
         format!("{done}/{total}"),
-        FontId::new(px(13.0), theme::family_semibold()),
-        theme::INK,
+        FontId::new(theme::text_px(13.0, s), theme::family_semibold()),
+        theme::ink(),
     );
     let headline = if all_done {
         match overall {
@@ -207,8 +207,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, body: Rect, s: f32) {
         Pos2::new(body.left() + px(80.0), body.top() + px(26.0)),
         Align2::LEFT_CENTER,
         headline,
-        FontId::new(px(15.0), theme::family_semibold()),
-        theme::INK,
+        FontId::new(theme::text_px(15.0, s), theme::family_semibold()),
+        theme::ink(),
     );
 
     if Button::new("Re-run", ButtonKind::Secondary)
@@ -267,8 +267,8 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         kit::bordered(
             ui.painter(),
             r,
-            theme::SURFACE_2,
-            theme::LINE,
+            theme::surface_2(),
+            theme::line(),
             px(theme::RADIUS_CARD),
         );
         let icon_c = Pos2::new(r.left() + px(26.0), r.center().y);
@@ -293,8 +293,8 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             Pos2::new(r.left() + px(50.0), r.top() + px(16.0)),
             Align2::LEFT_CENTER,
             &row.title,
-            FontId::new(px(13.5), theme::family_semibold()),
-            theme::INK,
+            FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
+            theme::ink(),
         );
         let message = row
             .result
@@ -305,8 +305,8 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             Pos2::new(r.left() + px(50.0), r.bottom() - px(16.0)),
             Align2::LEFT_CENTER,
             message,
-            FontId::new(px(12.0), theme::family_medium()),
-            theme::INK_MUTED,
+            FontId::new(theme::text_px(12.0, s), theme::family_medium()),
+            theme::ink_muted(),
         );
         if let Some(result) = &row.result
             && let Some(action) = &result.fix

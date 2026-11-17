@@ -89,9 +89,9 @@ enum Act {
 
 fn dot_color(severity: Severity) -> egui::Color32 {
     match severity {
-        Severity::Error => theme::DANGER,
-        Severity::Warning => theme::WARNING,
-        Severity::Info => theme::INK_MUTED,
+        Severity::Error => theme::danger(),
+        Severity::Warning => theme::warning(),
+        Severity::Info => theme::ink_muted(),
     }
 }
 
@@ -142,8 +142,8 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
                 Pos2::new(x, d.top() + px(50.0)),
                 Align2::LEFT_TOP,
                 summary,
-                FontId::new(px(13.0), theme::family_medium()),
-                theme::INK_DIM,
+                FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+                theme::ink_dim(),
             );
 
             let list = Rect::from_min_max(
@@ -226,10 +226,10 @@ fn rows(ui: &mut egui::Ui, results: &[Issue], s: f32) -> Option<Act> {
             controls += btn_w + gap;
         }
         let text_w = (avail - px(26.0) - controls).max(px(80.0));
-        let font = FontId::new(px(12.5), theme::family_medium());
+        let font = FontId::new(theme::text_px(12.5, s), theme::family_medium());
         let galley = ui
             .painter()
-            .layout(issue.message.clone(), font, theme::INK, text_w);
+            .layout(issue.message.clone(), font, theme::ink(), text_w);
         let row_h = galley.size().y.max(px(22.0)) + px(16.0);
         let (rr, _) = ui.allocate_exact_size(Vec2::new(avail, row_h), Sense::hover());
 
@@ -241,7 +241,7 @@ fn rows(ui: &mut egui::Ui, results: &[Issue], s: f32) -> Option<Act> {
         ui.painter().galley(
             Pos2::new(rr.left() + px(22.0), rr.top() + px(8.0)),
             galley,
-            theme::INK,
+            theme::ink(),
         );
 
         let mut bx = rr.right() - btn_w;
@@ -275,7 +275,7 @@ fn rows(ui: &mut egui::Ui, results: &[Issue], s: f32) -> Option<Act> {
         ui.painter().hline(
             rr.left()..=rr.right(),
             rr.bottom(),
-            egui::Stroke::new(1.0, theme::LINE),
+            egui::Stroke::new(1.0, theme::line()),
         );
     }
     act

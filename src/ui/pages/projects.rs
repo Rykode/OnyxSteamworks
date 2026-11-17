@@ -169,15 +169,15 @@ fn empty(app: &mut App, ui: &mut egui::Ui, content: Rect, s: f32) {
         pos2(c.x, c.y - px(28.0)),
         Align2::CENTER_CENTER,
         "No projects yet",
-        FontId::new(px(16.0), theme::family_semibold()),
-        theme::INK_DIM,
+        FontId::new(theme::text_px(16.0, s), theme::family_semibold()),
+        theme::ink_dim(),
     );
     ui.painter().text(
         pos2(c.x, c.y + px(2.0)),
         Align2::CENTER_CENTER,
         "Create one to generate VDFs and run builds.",
-        FontId::new(px(13.0), theme::family_medium()),
-        theme::INK_MUTED,
+        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+        theme::ink_muted(),
     );
     let btn = Rect::from_center_size(pos2(c.x, c.y + px(56.0)), Vec2::new(px(188.0), px(44.0)));
     if Button::new("New project", ButtonKind::Primary)
@@ -229,8 +229,8 @@ fn left_panel(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
             pos2(list.center().x, list.top() + px(30.0)),
             Align2::CENTER_CENTER,
             "No matching projects",
-            FontId::new(px(13.0), theme::family_medium()),
-            theme::INK_FAINT,
+            FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+            theme::ink_faint(),
         );
     }
     for i in &matches {
@@ -260,18 +260,19 @@ fn left_panel(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
                 );
                 let is_sel = selected.as_deref() == Some(p.id.as_str());
                 let resp = ui.interact(r, ui.make_persistent_id(("proj_row", i)), Sense::click());
+                crate::ui::kit::accessible(&resp, r, egui::Role::Button, if p.name.is_empty() { "Untitled project" } else { p.name.as_str() }, Some(is_sel), px(theme::RADIUS_CARD));
                 let hover = ui.ctx().animate_bool_with_time(
                     ui.make_persistent_id(("proj_hover", i)),
                     resp.hovered(),
                     0.12,
                 );
                 if is_sel {
-                    kit::bordered(ui.painter(), r, theme::SURFACE_2, theme::LINE, px(12.0));
+                    kit::bordered(ui.painter(), r, theme::surface_2(), theme::line(), px(12.0));
                 } else if hover > 0.01 {
                     ui.painter().rect_filled(
                         r,
                         theme::corner(px(12.0)),
-                        theme::with_alpha(theme::SURFACE_2, (hover * 200.0) as u8),
+                        theme::with_alpha(theme::surface_2(), (hover * 200.0) as u8),
                     );
                 }
                 let name = if p.name.is_empty() {
@@ -300,24 +301,28 @@ fn left_panel(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
                 };
                 let text_x = r.left() + px(67.5);
                 let clip = Rect::from_min_max(pos2(text_x, r.top()), pos2(tag_left - px(8.0), r.bottom()));
-                ui.painter().with_clip_rect(clip).text(
+                kit::fit_text(
+                    ui.painter(),
                     pos2(text_x, r.center().y - px(9.5)),
                     Align2::LEFT_CENTER,
-                    name,
-                    FontId::new(px(15.0), theme::family_semibold()),
-                    theme::INK,
+                    &name,
+                    FontId::new(theme::text_px(15.0, s), theme::family_semibold()),
+                    theme::ink(),
+                    clip.width(),
                 );
                 let sub = if p.app_id.is_empty() {
                     "No app ID".to_string()
                 } else {
                     p.app_id.clone()
                 };
-                ui.painter().with_clip_rect(clip).text(
+                kit::fit_text(
+                    ui.painter(),
                     pos2(text_x, r.center().y + px(10.5)),
                     Align2::LEFT_CENTER,
-                    sub,
-                    FontId::new(px(12.0), egui::FontFamily::Monospace),
-                    theme::INK_MUTED,
+                    &sub,
+                    FontId::new(theme::text_px(12.0, s), egui::FontFamily::Monospace),
+                    theme::ink_muted(),
+                    clip.width(),
                 );
                 if resp.clicked() {
                     action = Some(Action::Select(i));
@@ -459,15 +464,15 @@ fn confirm_modal(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 pos2(d.left() + px(26.0), d.top() + px(28.0)),
                 Align2::LEFT_TOP,
                 "Delete project",
-                FontId::new(px(13.0), theme::family_label()),
-                theme::INK,
+                FontId::new(theme::text_px(13.0, s), theme::family_label()),
+                theme::ink(),
             );
             ui.painter().text(
                 pos2(d.left() + px(26.0), d.top() + px(64.0)),
                 Align2::LEFT_TOP,
                 format!("Delete {name}? This cannot be undone."),
-                FontId::new(px(13.0), theme::family_medium()),
-                theme::INK_DIM,
+                FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+                theme::ink_dim(),
             );
             let bw = px(150.0);
             let by = d.bottom() - px(26.0) - px(40.0);

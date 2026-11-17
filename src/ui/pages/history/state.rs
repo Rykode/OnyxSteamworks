@@ -27,6 +27,8 @@ pub struct HistoryState {
     pub project_filter: usize,
     pub status_filter: StatusFilter,
     pub range_filter: RangeFilter,
+    /// `None` shows every branch.
+    pub branch_filter: Option<String>,
     pub detail: Option<BuildRecord>,
     pub detail_log: String,
     pub confirm_delete: bool,
@@ -48,6 +50,7 @@ impl HistoryState {
             project_filter: 0,
             status_filter: StatusFilter::All,
             range_filter: RangeFilter::All,
+            branch_filter: None,
             detail: None,
             detail_log: String::new(),
             confirm_delete: false,
@@ -149,6 +152,7 @@ impl HistoryState {
             .filter(|r| want_project.is_none_or(|pid| &r.project_id == pid))
             .filter(|r| want_status.is_none_or(|s| r.status == s))
             .filter(|r| window.is_none_or(|w| now - r.timestamp <= w))
+            .filter(|r| self.branch_filter.as_ref().is_none_or(|b| &r.branch == b))
             .collect()
     }
 

@@ -94,8 +94,8 @@ fn analytics(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
     kit::bordered(
         &ui.painter().clone(),
         acard,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_PANEL_MIN),
     );
     let ax = acard.left() + px(20.0);
@@ -136,8 +136,8 @@ fn stepper(
         Pos2::new(x, y + px(15.0)),
         Align2::LEFT_CENTER,
         label,
-        FontId::new(px(12.5), theme::family_medium()),
-        theme::INK_DIM,
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+        theme::ink_dim(),
     );
     let bx = x + px(230.0);
     let minus = Rect::from_min_size(Pos2::new(bx, y), Vec2::splat(px(30.0)));
@@ -149,8 +149,8 @@ fn stepper(
         Pos2::new((minus.right() + plus.left()) / 2.0, y + px(15.0)),
         Align2::CENTER_CENTER,
         value.to_string(),
-        FontId::new(px(13.5), theme::family_semibold()),
-        theme::INK,
+        FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
+        theme::ink(),
     );
     let mut changed = false;
     if Button::new("-", ButtonKind::Secondary)

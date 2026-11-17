@@ -61,9 +61,9 @@ fn active_banner(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) -> f32 {
     let waiting = active.awaiting.clone();
     let banner = Rect::from_min_size(rect.min, Vec2::new(rect.width(), px(48.0)));
     let tint = if waiting.is_some() {
-        theme::WARNING
+        theme::warning()
     } else {
-        theme::ACCENT
+        theme::accent()
     };
     kit::bordered(
         &ui.painter().clone(),
@@ -88,8 +88,8 @@ fn active_banner(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) -> f32 {
         Pos2::new(banner.left() + px(38.0), banner.center().y),
         Align2::LEFT_CENTER,
         text,
-        FontId::new(px(13.0), theme::family_medium()),
-        theme::INK,
+        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+        theme::ink(),
     );
     let cancel = Rect::from_min_size(
         Pos2::new(banner.right() - px(110.0), banner.top() + px(7.0)),
@@ -128,8 +128,8 @@ fn new_schedule(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
     kit::bordered(
         &ui.painter().clone(),
         card,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_CARD),
     );
     let x = card.left() + px(18.0);
@@ -308,8 +308,8 @@ fn time_row(form: &mut ScheduleForm, ui: &mut egui::Ui, card: Rect, x: f32, row2
         Pos2::new(tx + px(103.0), row2 + px(38.0)),
         Align2::CENTER_CENTER,
         ":",
-        FontId::new(px(14.0), theme::family_semibold()),
-        theme::INK_MUTED,
+        FontId::new(theme::text_px(14.0, s), theme::family_semibold()),
+        theme::ink_muted(),
     );
     stepper(
         ui,
@@ -372,8 +372,8 @@ fn time_row(form: &mut ScheduleForm, ui: &mut egui::Ui, card: Rect, x: f32, row2
                 Pos2::new(dx, row2 + px(38.0)),
                 Align2::LEFT_CENTER,
                 "Every day, local time",
-                FontId::new(px(12.5), theme::family_medium()),
-                theme::INK_MUTED,
+                FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+                theme::ink_muted(),
             );
         }
     }
@@ -413,8 +413,8 @@ fn stepper(ui: &mut egui::Ui, at: Pos2, value: &mut u32, min: u32, max: u32, ste
         } else {
             format!("{value:02}")
         },
-        FontId::new(px(13.5), theme::family_semibold()),
-        theme::INK,
+        FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
+        theme::ink(),
     );
     if Button::new("-", ButtonKind::Secondary)
         .show(ui, minus, s)
@@ -506,18 +506,18 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 kit::bordered(
                     ui.painter(),
                     r,
-                    theme::SURFACE_2,
-                    theme::LINE,
+                    theme::surface_2(),
+                    theme::line(),
                     px(theme::RADIUS_CARD),
                 );
                 let dot_color = if running.as_ref() == Some(&sch.id) {
-                    theme::ACCENT
+                    theme::accent()
                 } else if orphaned.contains(&sch.id) {
-                    theme::WARNING
+                    theme::warning()
                 } else if !sch.enabled || sch.is_legacy() {
-                    theme::INK_FAINT
+                    theme::ink_faint()
                 } else {
-                    sch.last_outcome.map(outcome_color).unwrap_or(theme::SUCCESS)
+                    sch.last_outcome.map(outcome_color).unwrap_or(theme::success())
                 };
                 ui.painter().circle_filled(
                     Pos2::new(r.left() + px(18.0), r.top() + px(22.0)),
@@ -533,10 +533,10 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     Pos2::new(r.left() + px(32.0), r.top() + px(22.0)),
                     Align2::LEFT_CENTER,
                     title,
-                    FontId::new(px(13.5), theme::family_semibold()),
-                    theme::INK,
+                    FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
+                    theme::ink(),
                 );
-                let sub_font = FontId::new(px(12.0), theme::family_medium());
+                let sub_font = FontId::new(theme::text_px(12.0, s), theme::family_medium());
                 let controls = if sch.is_legacy() { px(60.0) } else { px(420.0) };
                 let sub = kit::input::head_fit(
                     ui.painter(),
@@ -553,9 +553,9 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                         || orphaned.contains(&sch.id)
                         || trigger_errors.contains_key(&sch.id)
                     {
-                        theme::WARNING
+                        theme::warning()
                     } else {
-                        theme::INK_MUTED
+                        theme::ink_muted()
                     },
                 );
 
@@ -564,7 +564,7 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     Pos2::new(r.right() - px(12.0) - bw, r.center().y - bw / 2.0),
                     Vec2::splat(bw),
                 );
-                if kit::tooltip(kit::icon_button(ui, trash, theme::icon::TRASH, s), "Delete schedule")
+                if kit::tooltip(kit::icon_button(ui, trash, theme::icon::TRASH, "Delete schedule", s), "Delete schedule")
                     .clicked()
                 {
                     action = Some(RowAction::Delete(sch.id.clone()));
@@ -578,7 +578,7 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     Vec2::new(px(42.0), px(22.0)),
                 );
                 let mut on = sch.enabled;
-                if kit::tooltip(kit::toggle(ui, toggle, &mut on, s), "Pause or resume").changed() {
+                if kit::tooltip(kit::toggle(ui, toggle, &mut on, "Schedule enabled", s), "Pause or resume").changed() {
                     action = Some(RowAction::Toggle(sch.id.clone(), on));
                 }
                 let run = Rect::from_min_size(
@@ -605,10 +605,10 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                         "Runs only while Onyx is open. Click to register it with Windows Task Scheduler.",
                     )
                 };
-                let font = FontId::new(px(11.5), theme::family_medium());
+                let font = FontId::new(theme::text_px(11.5, s), theme::family_medium());
                 let w = ui
                     .painter()
-                    .layout_no_wrap(badge_text.to_string(), font.clone(), theme::INK)
+                    .layout_no_wrap(badge_text.to_string(), font.clone(), theme::ink())
                     .size()
                     .x;
                 let badge = Rect::from_min_size(
@@ -621,9 +621,9 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     egui::Sense::click(),
                 );
                 let tint = if sch.task_installed {
-                    theme::ACCENT
+                    theme::accent()
                 } else {
-                    theme::INK_MUTED
+                    theme::ink_muted()
                 };
                 ui.painter().rect_filled(
                     badge,
@@ -636,9 +636,9 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     badge_text,
                     font,
                     if sch.task_installed {
-                        theme::ACCENT_HI
+                        theme::accent_hi()
                     } else {
-                        theme::INK_DIM
+                        theme::ink_dim()
                     },
                 );
                 if cfg!(windows)

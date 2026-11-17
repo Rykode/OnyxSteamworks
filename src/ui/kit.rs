@@ -4,6 +4,7 @@ pub mod button;
 pub mod chip;
 pub mod confirm;
 pub mod input;
+pub mod menu;
 pub mod overlay;
 pub mod progress;
 pub mod rail;
@@ -14,10 +15,11 @@ pub use button::{Button, ButtonKind, icon_button};
 pub use chip::{chip, chip_size};
 pub use confirm::{Choice, Confirm, confirm};
 pub use input::Input;
+pub use menu::{MenuEvent, MenuItem, menu};
 pub use overlay::{ToastLevel, Toasts, modal, modal_active, modal_with, tooltip};
 pub use progress::{line_chart, progress_bar, progress_ring, segment_progress};
 pub use rail::{RailAction, RailState, kbd, rail};
-pub use select::{dropdown, tabs};
+pub use select::dropdown;
 pub use toggles::{checkbox, toggle};
 
 use eframe::egui::{self, Align2, FontId, Pos2, Rect, Sense, Stroke, StrokeKind, Vec2};
@@ -44,33 +46,13 @@ pub fn bordered(
     );
 }
 
-pub fn separator(painter: &egui::Painter, a: Pos2, b: Pos2) {
-    painter.line_segment([a, b], Stroke::new(1.0, theme::LINE));
-}
-
 pub fn label(painter: &egui::Painter, pos: Pos2, text: &str, s: f32) {
     painter.text(
         pos,
         Align2::LEFT_TOP,
         text,
-        FontId::new(theme::px(12.0, s), theme::family_label()),
-        theme::INK_MUTED,
-    );
-}
-
-pub fn label_optional(painter: &egui::Painter, pos: Pos2, text: &str, suffix: &str, s: f32) {
-    let font = FontId::new(theme::px(12.0, s), theme::family_label());
-    let w = painter
-        .layout_no_wrap(text.to_owned(), font.clone(), theme::INK_MUTED)
-        .size()
-        .x;
-    painter.text(pos, Align2::LEFT_TOP, text, font, theme::INK_MUTED);
-    painter.text(
-        Pos2::new(pos.x + w + theme::px(8.0, s), pos.y),
-        Align2::LEFT_TOP,
-        suffix,
-        FontId::new(theme::px(11.0, s), theme::family_label()),
-        theme::INK_FAINT,
+        FontId::new(theme::text_px(12.0, s), theme::family_label()),
+        theme::ink_muted(),
     );
 }
 
@@ -79,8 +61,8 @@ pub fn heading(painter: &egui::Painter, pos: Pos2, text: &str, s: f32) {
         pos,
         Align2::LEFT_TOP,
         text,
-        FontId::new(theme::px(14.0, s), theme::family_semibold()),
-        theme::INK,
+        FontId::new(theme::text_px(14.0, s), theme::family_semibold()),
+        theme::ink(),
     );
 }
 
@@ -112,22 +94,24 @@ pub fn empty_state(ui: &mut egui::Ui, rect: Rect, glyph: char, title: &str, body
         Align2::CENTER_CENTER,
         glyph.to_string(),
         theme::icon_font(px(34.0), false),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     painter.text(
         Pos2::new(cx, cy),
         Align2::CENTER_CENTER,
         title,
-        FontId::new(px(15.0), theme::family_semibold()),
-        theme::INK_DIM,
+        FontId::new(theme::text_px(15.0, s), theme::family_semibold()),
+        theme::ink_dim(),
     );
     painter.text(
         Pos2::new(cx, cy + px(22.0)),
         Align2::CENTER_CENTER,
         body,
-        FontId::new(px(12.5), theme::family_medium()),
-        theme::INK_MUTED,
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+        theme::ink_muted(),
     );
+    let area = Rect::from_center_size(Pos2::new(cx, cy), Vec2::new(px(320.0), px(80.0)));
+    readable(ui, area, egui::Role::Label, &format!("{title}. {body}"), false);
 }
 
 pub const RADIUS_CARD_PX: f32 = 17.0;
@@ -135,11 +119,7 @@ pub const RADIUS_CARD_PX: f32 = 17.0;
 pub fn card(painter: &egui::Painter, rect: Rect, s: f32) {
     let r = theme::px(RADIUS_CARD_PX, s);
     theme::shadow(painter, rect, r, 18, 60);
-    bordered(painter, rect, theme::SURFACE, theme::LINE_SOFT, r);
-}
-
-pub fn inset(painter: &egui::Painter, rect: Rect, s: f32) {
-    painter.rect_filled(rect, theme::corner(theme::px(14.0, s)), theme::WELL);
+    bordered(painter, rect, theme::surface(), theme::line_soft(), r);
 }
 
 pub fn spaced(text: &str, font: FontId, color: egui::Color32, spacing: f32) -> egui::text::LayoutJob {
@@ -160,7 +140,7 @@ pub fn spaced(text: &str, font: FontId, color: egui::Color32, spacing: f32) -> e
 pub fn caps(painter: &egui::Painter, pos: Pos2, align: Align2, text: &str, size: f32, color: egui::Color32, s: f32) -> Rect {
     let job = spaced(
         &text.to_uppercase(),
-        FontId::new(theme::px(size, s), theme::family_semibold()),
+        FontId::new(theme::text_px(size, s), theme::family_semibold()),
         color,
         theme::px(size * 0.1, s),
     );
@@ -170,16 +150,18 @@ pub fn caps(painter: &egui::Painter, pos: Pos2, align: Align2, text: &str, size:
     rect
 }
 
-pub fn card_title(painter: &egui::Painter, card: Rect, text: &str, s: f32) -> Rect {
-    caps(
-        painter,
+pub fn card_title(ui: &egui::Ui, card: Rect, text: &str, s: f32) -> Rect {
+    let rect = caps(
+        ui.painter(),
         Pos2::new(card.left() + theme::px(20.0, s), card.top() + theme::px(26.0, s)),
         Align2::LEFT_CENTER,
         text,
         12.5,
-        theme::INK_MUTED,
+        theme::ink_muted(),
         s,
-    )
+    );
+    readable(ui, rect, egui::Role::Heading, text, false);
+    rect
 }
 
 pub fn card_note(painter: &egui::Painter, card: Rect, text: &str, s: f32) -> Rect {
@@ -187,8 +169,8 @@ pub fn card_note(painter: &egui::Painter, card: Rect, text: &str, s: f32) -> Rec
         Pos2::new(card.right() - theme::px(20.0, s), card.top() + theme::px(26.0, s)),
         Align2::RIGHT_CENTER,
         text,
-        FontId::new(theme::px(12.5, s), theme::family_medium()),
-        theme::INK_FAINT,
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+        theme::ink_faint(),
     )
 }
 
@@ -202,7 +184,7 @@ pub fn badge(
     s: f32,
 ) -> Rect {
     let px = |v: f32| theme::px(v, s);
-    let font = FontId::new(px(12.5), theme::family_semibold());
+    let font = FontId::new(theme::text_px(12.5, s), theme::family_semibold());
     let galley = painter.layout_no_wrap(text.to_owned(), font, color);
     let lead = if dot { px(17.0) } else { px(9.0) };
     let size = Vec2::new(lead + galley.size().x + px(9.0), px(23.0));
@@ -225,15 +207,15 @@ pub fn badge(
 
 pub fn tag(painter: &egui::Painter, pos: Pos2, align: Align2, text: &str, s: f32) -> Rect {
     let px = |v: f32| theme::px(v, s);
-    let font = FontId::new(px(12.0), theme::family_semibold());
-    let galley = painter.layout_no_wrap(text.to_owned(), font, theme::INK_DIM);
+    let font = FontId::new(theme::text_px(12.0, s), theme::family_semibold());
+    let galley = painter.layout_no_wrap(text.to_owned(), font, theme::ink_dim());
     let size = Vec2::new(galley.size().x + px(18.0), px(23.0));
     let rect = align.anchor_size(pos, size);
-    painter.rect_filled(rect, theme::corner(px(8.0)), theme::FIELD_HI);
+    painter.rect_filled(rect, theme::corner(px(8.0)), theme::field_hi());
     painter.galley(
         rect.center() - galley.size() / 2.0,
         galley,
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
     rect
 }
@@ -279,13 +261,13 @@ pub fn header_buttons(
     s: f32,
 ) -> Option<usize> {
     let px = |v: f32| theme::px(v, s);
-    let font = FontId::new(px(13.0), theme::family_medium());
+    let font = FontId::new(theme::text_px(13.0, s), theme::family_medium());
     let mut right = header.right();
     let mut clicked = None;
     for (i, (label, glyph, kind, enabled)) in buttons.iter().enumerate().rev() {
         let w = ui
             .painter()
-            .layout_no_wrap((*label).to_owned(), font.clone(), theme::INK)
+            .layout_no_wrap((*label).to_owned(), font.clone(), theme::ink())
             .size()
             .x
             + px(14.0 + 6.0 + 40.0);
@@ -307,14 +289,75 @@ pub fn header_buttons(
     clicked
 }
 
+/// Screen-reader name and role plus the shared keyboard-focus outline for a
+/// hand-drawn click target. Call it right after `interact`/`allocate_*`. The
+/// outline sits just outside `rect`, so a fill the caller paints afterwards
+/// cannot cover it. Pass `selected` for tabs, rows and other toggled items.
+pub fn accessible(
+    resp: &egui::Response,
+    rect: Rect,
+    role: egui::Role,
+    label: &str,
+    selected: Option<bool>,
+    radius: f32,
+) {
+    let enabled = resp.enabled();
+    resp.widget_info(|| egui::WidgetInfo::labeled(role, enabled, label));
+    if let Some(on) = selected {
+        resp.ctx.accesskit_node_builder(resp.id, |node| node.set_selected(on));
+    }
+    if resp.has_focus() {
+        let grow = 2.0;
+        // Clip to what is actually visible of the target (scroll areas, panels).
+        let clip = resp.interact_rect.expand(grow + 1.0);
+        resp.ctx.layer_painter(resp.layer_id).with_clip_rect(clip).rect_stroke(
+            rect.expand(grow),
+            theme::corner(radius + grow),
+            egui::Stroke::new(1.5, theme::with_alpha(theme::focus(), 220)),
+            egui::StrokeKind::Inside,
+        );
+    }
+}
+
+/// Exposes hand-painted text to screen readers as a read-only node over `rect`.
+/// Painted text is otherwise invisible to assistive tech. `live` marks status
+/// text whose changes should be announced when they happen.
+pub fn readable(ui: &egui::Ui, rect: Rect, role: egui::Role, text: &str, live: bool) {
+    let id = ui.make_persistent_id(("readable", rect.left() as i32, rect.top() as i32));
+    let resp = ui.interact(rect, id, Sense::hover());
+    resp.widget_info(|| egui::WidgetInfo::labeled(role, true, text));
+    if live {
+        ui.ctx()
+            .accesskit_node_builder(id, |node| node.set_live(egui::accesskit::Live::Polite));
+    }
+}
+
+/// Single-line text limited to `max_w`: it ends in "…" instead of being cut
+/// mid-glyph by a clip rect. Returns the drawn rect and whether it was shortened,
+/// so callers can offer the full value on hover.
+pub fn fit_text(
+    painter: &egui::Painter,
+    pos: Pos2,
+    align: Align2,
+    text: &str,
+    font: FontId,
+    color: egui::Color32,
+    max_w: f32,
+) -> (Rect, bool) {
+    let shown = input::head_fit(painter, text, &font, max_w.max(0.0));
+    let cut = shown != text;
+    (painter.text(pos, align, shown, font, color), cut)
+}
+
 pub fn link(ui: &mut egui::Ui, pos: Pos2, align: Align2, text: &str, color: egui::Color32, s: f32) -> egui::Response {
-    let font = FontId::new(theme::px(12.5, s), theme::family_semibold());
+    let font = FontId::new(theme::text_px(12.5, s), theme::family_semibold());
     let galley = ui.painter().layout_no_wrap(text.to_owned(), font, color);
     let rect = align.anchor_size(pos, galley.size());
     let resp = ui
         .interact(rect.expand(theme::px(4.0, s)), ui.make_persistent_id(("link", text, rect.left() as i32, rect.top() as i32)), Sense::click())
         .on_hover_cursor(egui::CursorIcon::PointingHand);
-    let c = if resp.hovered() { theme::lerp_color(color, theme::INK, 0.4) } else { color };
+    accessible(&resp, rect.expand(theme::px(4.0, s)), egui::Role::Link, text, None, theme::px(4.0, s));
+    let c = if resp.hovered() { theme::lerp_color(color, theme::ink(), 0.4) } else { color };
     ui.painter().galley(rect.min, galley, c);
     resp
 }

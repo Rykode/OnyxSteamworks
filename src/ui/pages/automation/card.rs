@@ -28,8 +28,8 @@ fn lbl(ui: &egui::Ui, x: f32, y: f32, text: &str, s: f32) {
         Pos2::new(x, y),
         Align2::LEFT_TOP,
         text,
-        FontId::new(theme::px(11.0, s), theme::family_label()),
-        theme::INK_MUTED,
+        FontId::new(theme::text_px(11.0, s), theme::family_label()),
+        theme::ink_muted(),
     );
 }
 
@@ -60,6 +60,7 @@ pub(super) fn fields(
         ui,
         Rect::from_min_size(Pos2::new(x, y), Vec2::new(px(42.0), px(22.0))),
         &mut step.enabled,
+        "Enabled",
         s,
     );
     text(ui, x + px(50.0), y + px(11.0), "Enabled", s);
@@ -67,6 +68,7 @@ pub(super) fn fields(
         ui,
         Rect::from_min_size(Pos2::new(x + px(150.0), y), Vec2::new(px(42.0), px(22.0))),
         &mut step.continue_on_failure,
+        "Continue on failure",
         s,
     );
     text(ui, x + px(200.0), y + px(11.0), "Continue on failure", s);
@@ -248,18 +250,18 @@ fn build_game_fields(
     kit::bordered(
         &ui.painter().clone(),
         preview,
-        theme::BG,
-        theme::LINE_SOFT,
+        theme::bg(),
+        theme::line_soft(),
         px(theme::RADIUS_FIELD),
     );
     let (body, color) = match presets::build_command(project, step) {
-        Ok(cmd) => (cmd.display(), theme::INK_DIM),
-        Err(e) => (e, theme::WARNING),
+        Ok(cmd) => (cmd.display(), theme::ink_dim()),
+        Err(e) => (e, theme::warning()),
     };
     let inner = preview.shrink(px(10.0));
     let galley = ui
         .painter()
-        .layout(body, FontId::monospace(px(11.5)), color, inner.width());
+        .layout(body, FontId::monospace(theme::text_px(11.5, s)), color, inner.width());
     ui.painter()
         .with_clip_rect(inner)
         .galley(inner.min, galley, color);
@@ -312,15 +314,15 @@ fn run_command_fields(
     kit::bordered(
         &ui.painter().clone(),
         env_rect,
-        theme::FIELD,
-        theme::LINE,
+        theme::field(),
+        theme::line(),
         px(theme::RADIUS_FIELD),
     );
     ui.new_child(egui::UiBuilder::new().max_rect(env_rect.shrink(px(8.0))))
         .add(
             egui::TextEdit::multiline(&mut step.env)
                 .frame(Frame::NONE)
-                .text_color(theme::INK)
+                .text_color(theme::ink())
                 .desired_width(f32::INFINITY),
         );
 }
@@ -379,7 +381,7 @@ fn text(ui: &egui::Ui, x: f32, y: f32, content: &str, s: f32) {
         Pos2::new(x, y),
         Align2::LEFT_TOP,
         content,
-        FontId::new(theme::px(12.0, s), theme::family_medium()),
-        theme::INK_MUTED,
+        FontId::new(theme::text_px(12.0, s), theme::family_medium()),
+        theme::ink_muted(),
     );
 }

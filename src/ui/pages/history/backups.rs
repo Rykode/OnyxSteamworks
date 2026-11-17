@@ -121,8 +121,8 @@ fn controls(
         Pos2::new(rect.left(), rect.top() + px(12.0)),
         Align2::LEFT_CENTER,
         folder,
-        FontId::new(px(12.5), theme::family_medium()),
-        theme::INK_DIM,
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+        theme::ink_dim(),
     );
     if Button::new("Choose folder", ButtonKind::Secondary)
         .icon(theme::icon::FOLDER)
@@ -151,8 +151,8 @@ fn controls(
         Pos2::new(rect.left(), y2 + px(15.0)),
         Align2::LEFT_CENTER,
         format!("Keep last {}", cfg.backup_keep),
-        FontId::new(px(12.5), theme::family_medium()),
-        theme::INK_DIM,
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+        theme::ink_dim(),
     );
     let minus = Rect::from_min_size(
         Pos2::new(rect.left() + px(110.0), y2),
@@ -183,7 +183,7 @@ fn controls(
         Vec2::new(px(44.0), px(24.0)),
     );
     let mut prune = cfg.backup_auto_prune;
-    if kit::toggle(ui, tog, &mut prune, s).changed() {
+    if kit::toggle(ui, tog, &mut prune, "Auto-delete old backups", s).changed() {
         cfg.backup_auto_prune = prune;
         save(cfg);
     }
@@ -191,8 +191,8 @@ fn controls(
         Pos2::new(tog.right() + px(10.0), tog.center().y),
         Align2::LEFT_CENTER,
         "Auto-delete old backups",
-        FontId::new(px(12.5), theme::family_medium()),
-        theme::INK_DIM,
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+        theme::ink_dim(),
     );
 
     let can_backup = !app.backup_ui.running
@@ -312,16 +312,16 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 kit::bordered(
                     ui.painter(),
                     r,
-                    theme::SURFACE_2,
-                    theme::LINE,
+                    theme::surface_2(),
+                    theme::line(),
                     px(theme::RADIUS_CARD),
                 );
                 ui.painter().text(
                     Pos2::new(r.left() + px(16.0), r.center().y - px(8.0)),
                     Align2::LEFT_CENTER,
                     format!("Build #{}", info.meta.build_number),
-                    FontId::new(px(13.5), theme::family_semibold()),
-                    theme::INK,
+                    FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
+                    theme::ink(),
                 );
                 let sub = format!(
                     "{}  ·  {}",
@@ -332,8 +332,8 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     Pos2::new(r.left() + px(16.0), r.center().y + px(9.0)),
                     Align2::LEFT_CENTER,
                     sub,
-                    FontId::new(px(11.5), theme::family_medium()),
-                    theme::INK_MUTED,
+                    FontId::new(theme::text_px(11.5, s), theme::family_medium()),
+                    theme::ink_muted(),
                 );
                 let bw = px(30.0);
                 let dz = Rect::from_min_size(
@@ -348,13 +348,13 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     Pos2::new(rz.left() - px(6.0) - bw, r.center().y - bw / 2.0),
                     Vec2::splat(bw),
                 );
-                if kit::icon_button(ui, vz, theme::icon::FOLDER, s).clicked() {
+                if kit::icon_button(ui, vz, theme::icon::FOLDER, "Show backup in folder", s).clicked() {
                     reveal = info.path.parent().map(|p| p.to_path_buf());
                 }
-                if kit::icon_button(ui, rz, theme::icon::DOWNLOAD, s).clicked() {
+                if kit::icon_button(ui, rz, theme::icon::DOWNLOAD, "Restore backup", s).clicked() {
                     restore = Some(info.path.clone());
                 }
-                if kit::icon_button(ui, dz, theme::icon::TRASH, s).clicked() {
+                if kit::icon_button(ui, dz, theme::icon::TRASH, "Delete backup", s).clicked() {
                     delete = Some(info.path.clone());
                 }
                 ui.add_space(px(10.0));
@@ -412,8 +412,8 @@ fn delete_modal(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 Pos2::new(x, d.top() + px(58.0)),
                 Align2::LEFT_TOP,
                 "This permanently deletes the backup zip.",
-                FontId::new(px(12.5), theme::family_medium()),
-                theme::INK_DIM,
+                FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+                theme::ink_dim(),
             );
             let bw = px(150.0);
             let by = d.bottom() - px(26.0) - px(40.0);

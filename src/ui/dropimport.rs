@@ -82,20 +82,20 @@ fn overlay(ctx: &egui::Context, id: egui::Id, frame: Rect, s: f32) {
                 theme::with_alpha(Color32::BLACK, 175),
             );
             let inset = frame.shrink(px(22.0));
-            dashed_rect(painter, inset, theme::INK, px(12.0), px(8.0), px(1.5));
+            dashed_rect(painter, inset, theme::ink(), px(12.0), px(8.0), px(1.5));
             painter.text(
                 inset.center() - Vec2::new(0.0, px(14.0)),
                 Align2::CENTER_CENTER,
                 theme::icon::PACKAGE.to_string(),
                 theme::icon_font(px(34.0), false),
-                theme::INK,
+                theme::ink(),
             );
             painter.text(
                 inset.center() + Vec2::new(0.0, px(28.0)),
                 Align2::CENTER_CENTER,
                 "Drop a game folder to create a project",
-                FontId::new(px(15.0), theme::family_semibold()),
-                theme::INK,
+                FontId::new(theme::text_px(15.0, s), theme::family_semibold()),
+                theme::ink(),
             );
         });
 }
@@ -156,8 +156,8 @@ fn confirm(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 Pos2::new(d.right() - px(26.0), d.top() + px(28.0)),
                 Align2::RIGHT_CENTER,
                 detected.engine.label(),
-                FontId::new(px(12.5), theme::family_semibold()),
-                theme::INK_DIM,
+                FontId::new(theme::text_px(12.5, s), theme::family_semibold()),
+                theme::ink_dim(),
             );
 
             let mut y = d.top() + px(58.0);
@@ -166,15 +166,15 @@ fn confirm(app: &mut App, ui: &mut egui::Ui, s: f32) {
                     Pos2::new(x, y),
                     Align2::LEFT_TOP,
                     k,
-                    FontId::new(px(11.5), theme::family_label()),
-                    theme::INK_MUTED,
+                    FontId::new(theme::text_px(11.5, s), theme::family_label()),
+                    theme::ink_muted(),
                 );
                 painter.text(
                     Pos2::new(x + px(120.0), y),
                     Align2::LEFT_TOP,
                     &v,
-                    FontId::new(px(12.0), theme::family_medium()),
-                    theme::INK_DIM,
+                    FontId::new(theme::text_px(12.0, s), theme::family_medium()),
+                    theme::ink_dim(),
                 );
                 y += px(22.0);
             }
@@ -186,16 +186,16 @@ fn confirm(app: &mut App, ui: &mut egui::Ui, s: f32) {
             kit::bordered(
                 &painter,
                 dl,
-                theme::FIELD,
-                theme::LINE,
+                theme::field(),
+                theme::line(),
                 px(theme::RADIUS_FIELD),
             );
             painter.text(
                 Pos2::new(dl.left() + px(12.0), dl.top() + px(10.0)),
                 Align2::LEFT_TOP,
                 format!("DEPOTS ({})", detected.depots.len()),
-                FontId::new(px(11.0), theme::family_label()),
-                theme::INK_MUTED,
+                FontId::new(theme::text_px(11.0, s), theme::family_label()),
+                theme::ink_muted(),
             );
             for (i, dep) in detected.depots.iter().take(5).enumerate() {
                 let os = dep
@@ -209,8 +209,8 @@ fn confirm(app: &mut App, ui: &mut egui::Ui, s: f32) {
                     ),
                     Align2::LEFT_TOP,
                     format!("{}{os}", dep.name),
-                    FontId::new(px(12.0), theme::family_medium()),
-                    theme::INK_DIM,
+                    FontId::new(theme::text_px(12.0, s), theme::family_medium()),
+                    theme::ink_dim(),
                 );
             }
 

@@ -18,7 +18,7 @@ pub(super) fn body(ui: &mut egui::Ui, phase: &Phase, done: usize, total: usize, 
             ui,
             area,
             "Downloading the build to a temp folder...",
-            theme::INK_DIM,
+            theme::ink_dim(),
             s,
         ),
         Phase::Hashing => {
@@ -26,7 +26,7 @@ pub(super) fn body(ui: &mut egui::Ui, phase: &Phase, done: usize, total: usize, 
                 ui,
                 area,
                 &format!("Hashing downloaded files ({done}/{total})..."),
-                theme::INK_DIM,
+                theme::ink_dim(),
                 s,
             );
             let bar = Rect::from_min_size(
@@ -35,8 +35,8 @@ pub(super) fn body(ui: &mut egui::Ui, phase: &Phase, done: usize, total: usize, 
             );
             kit::progress_bar(ui, bar, done as f32 / total.max(1) as f32, s);
         }
-        Phase::Access(msg) => status(ui, area, msg, theme::WARNING, s),
-        Phase::Failed(msg) => status(ui, area, msg, theme::DANGER, s),
+        Phase::Access(msg) => status(ui, area, msg, theme::warning(), s),
+        Phase::Failed(msg) => status(ui, area, msg, theme::danger(), s),
         Phase::Done(report) => report_body(ui, area, report, s),
     }
 }
@@ -44,7 +44,7 @@ pub(super) fn body(ui: &mut egui::Ui, phase: &Phase, done: usize, total: usize, 
 fn status(ui: &egui::Ui, area: Rect, text: &str, color: Color32, s: f32) {
     let galley = ui.painter().layout(
         text.to_string(),
-        FontId::new(theme::px(13.0, s), theme::family_medium()),
+        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
         color,
         area.width(),
     );
@@ -54,7 +54,7 @@ fn status(ui: &egui::Ui, area: Rect, text: &str, color: Color32, s: f32) {
 fn report_body(ui: &mut egui::Ui, area: Rect, report: &VerifyReport, s: f32) {
     let px = |v: f32| theme::px(v, s);
     let (text, color) = if report.all_match() {
-        ("All files match the manifest.".to_string(), theme::SUCCESS)
+        ("All files match the manifest.".to_string(), theme::success())
     } else {
         (
             format!(
@@ -64,14 +64,14 @@ fn report_body(ui: &mut egui::Ui, area: Rect, report: &VerifyReport, s: f32) {
                 report.mismatched.len(),
                 report.extra.len()
             ),
-            theme::WARNING,
+            theme::warning(),
         )
     };
     ui.painter().text(
         area.left_top(),
         Align2::LEFT_TOP,
         text,
-        FontId::new(px(13.5), theme::family_semibold()),
+        FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
         color,
     );
     let list = Rect::from_min_max(Pos2::new(area.left(), area.top() + px(28.0)), area.max);
@@ -82,9 +82,9 @@ fn report_body(ui: &mut egui::Ui, area: Rect, report: &VerifyReport, s: f32) {
         .show(&mut cu, |ui| {
             ui.set_width(list.width() - px(14.0));
             for (label, items, c) in [
-                ("Missing", &report.missing, theme::DANGER),
-                ("Mismatched", &report.mismatched, theme::WARNING),
-                ("Extra", &report.extra, theme::INK_MUTED),
+                ("Missing", &report.missing, theme::danger()),
+                ("Mismatched", &report.mismatched, theme::warning()),
+                ("Extra", &report.extra, theme::ink_muted()),
             ] {
                 if items.is_empty() {
                     continue;
@@ -104,8 +104,8 @@ fn report_body(ui: &mut egui::Ui, area: Rect, report: &VerifyReport, s: f32) {
                         Pos2::new(r.left() + px(16.0), r.center().y),
                         Align2::LEFT_CENTER,
                         item,
-                        FontId::new(px(12.0), theme::family_medium()),
-                        theme::INK_DIM,
+                        FontId::new(theme::text_px(12.0, s), theme::family_medium()),
+                        theme::ink_dim(),
                     );
                 }
             }

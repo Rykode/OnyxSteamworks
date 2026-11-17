@@ -5,9 +5,64 @@ use crate::model::{BranchLevel, BuildRecord, BuildStatus};
 use crate::ui::kit;
 
 pub(super) fn after_finish(app: &mut App, record: &BuildRecord, ctx: &egui::Context) {
+    record_throughput(app, record);
+    remind_not_live(app, record);
     bump_counter(app, record);
     maybe_reset_checklist(app, record);
     fire_notification(app, record, ctx);
+}
+
+/// An upload-only build sits in Steamworks until someone sets it live. Say so, with
+/// a shortcut to the app's builds page where that happens.
+fn remind_not_live(app: &mut App, record: &BuildRecord) {
+    if record.status != BuildStatus::Success || app.build_ui.run_preview || app.build_ui.run_set_live {
+        return;
+    }
+    let Some(app_id) = app
+        .projects
+        .iter()
+        .find(|p| p.id == record.project_id)
+        .map(|p| p.app_id.clone())
+        .filter(|id| !id.is_empty())
+    else {
+        return;
+    };
+    let branch = if record.branch.is_empty() { "default" } else { record.branch.as_str() };
+    let url = crate::features::quick::steamworks_builds_url(&app_id);
+    app.offer_action(
+        kit::ToastLevel::Warning,
+        format!("Uploaded, but not live on {branch} yet. Set it live in Steamworks."),
+        "Open",
+        false,
+        false,
+        move |_| {
+            super::actions::open_target(url);
+            Ok(())
+        },
+    );
+}
+
+/// Remember how fast this upload went, so Review can estimate the next one.
+fn record_throughput(app: &App, record: &BuildRecord) {
+    if record.status != BuildStatus::Success || app.build_ui.run_preview {
+        return;
+    }
+    let Some(summary) = app.build_ui.review.summary_for(&record.project_id) else {
+        return;
+    };
+    let Some(upload) = app.build_ui.stage_time(crate::steamcmd::Stage::Uploading) else {
+        return;
+    };
+    let bytes = summary.estimated_upload();
+    // Tiny uploads are dominated by fixed overhead and would skew the estimate.
+    if upload.as_secs_f64() < 5.0 || bytes < 1 << 20 {
+        return;
+    }
+    let bps = (bytes as f64 / upload.as_secs_f64()) as u64;
+    if let Ok(mut settings) = crate::config::load_settings() {
+        settings.upload_bps = bps;
+        let _ = crate::config::save_settings(&settings);
+    }
 }
 
 fn bump_counter(app: &mut App, record: &BuildRecord) {

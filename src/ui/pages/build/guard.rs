@@ -116,12 +116,12 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
             );
             let galley = ui.painter().layout(
                 note,
-                FontId::new(px(12.5), theme::family_medium()),
-                theme::DANGER,
+                FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+                theme::danger(),
                 d.width() - px(52.0),
             );
             ui.painter()
-                .galley(Pos2::new(x, d.top() + px(52.0)), galley, theme::DANGER);
+                .galley(Pos2::new(x, d.top() + px(52.0)), galley, theme::danger());
 
             if shown > 0 {
                 kit::label(
@@ -135,14 +135,14 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
                     ui.painter().circle_filled(
                         Pos2::new(x + px(4.0), y + px(6.0)),
                         px(2.5),
-                        theme::WARNING,
+                        theme::warning(),
                     );
                     ui.painter().text(
                         Pos2::new(x + px(16.0), y),
                         Align2::LEFT_TOP,
                         item,
-                        FontId::new(px(12.0), theme::family_medium()),
-                        theme::INK_DIM,
+                        FontId::new(theme::text_px(12.0, s), theme::family_medium()),
+                        theme::ink_dim(),
                     );
                 }
             }

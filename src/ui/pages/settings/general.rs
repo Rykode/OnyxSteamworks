@@ -92,8 +92,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 Pos2::new(hint.left(), hint.top() + px(2.0)),
                 Align2::LEFT_TOP,
                 "Every project builds with this SteamCMD. The setup wizard can download it for you.",
-                FontId::new(px(11.5), theme::family_medium()),
-                theme::INK_MUTED,
+                FontId::new(theme::text_px(11.5, s), theme::family_medium()),
+                theme::ink_muted(),
             );
 
             section(ui, "Default folders", s);
@@ -118,8 +118,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 Pos2::new(hint.left(), hint.top() + px(2.0)),
                 Align2::LEFT_TOP,
                 "Projects use these folders unless you override them in the project editor.",
-                FontId::new(px(11.5), theme::family_medium()),
-                theme::INK_MUTED,
+                FontId::new(theme::text_px(11.5, s), theme::family_medium()),
+                theme::ink_muted(),
             );
 
             section(ui, "Display", s);
@@ -129,10 +129,67 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 theme::set_ui_scale(c.ui_scale);
                 dirty = true;
             }
+            let row = alloc(ui, 44.0, s);
+            ui.painter().text(
+                Pos2::new(row.left(), row.center().y),
+                Align2::LEFT_CENTER,
+                "Theme",
+                FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+                theme::ink_dim(),
+            );
+            let mut cx = row.right();
+            for (mode, label) in [
+                (crate::config::ThemeMode::System, "System"),
+                (crate::config::ThemeMode::Light, "Light"),
+                (crate::config::ThemeMode::Dark, "Dark"),
+            ] {
+                let size = kit::chip_size(ui, label, s);
+                cx -= size.x;
+                let r = Rect::from_min_size(Pos2::new(cx, row.center().y - size.y / 2.0), size);
+                if kit::chip(ui, r, label, c.theme == mode, s).clicked() && c.theme != mode {
+                    c.theme = mode;
+                    theme::set_mode(&ctx, mode);
+                    dirty = true;
+                }
+                cx -= px(8.0);
+            }
             if toggle_row(ui, "Reduce motion", &mut c.reduce_motion, s) {
                 anim::set_reduce_motion(c.reduce_motion);
                 dirty = true;
             }
+            if anim::os_reduces_motion() && !c.reduce_motion {
+                let note = alloc(ui, 24.0, s);
+                ui.painter().text(
+                    Pos2::new(note.left(), note.top() + px(2.0)),
+                    Align2::LEFT_TOP,
+                    "Windows has animations turned off, so Onyx reduces motion anyway.",
+                    FontId::new(theme::text_px(11.5, s), theme::family_medium()),
+                    theme::ink_muted(),
+                );
+            }
+
+            section(ui, "Behavior", s);
+            dirty |= toggle_row(
+                ui,
+                "Close to the notification area instead of quitting",
+                &mut c.close_to_tray,
+                s,
+            );
+            if c.close_to_tray {
+                let note = alloc(ui, 24.0, s);
+                ui.painter().text(
+                    Pos2::new(note.left(), note.top() + px(2.0)),
+                    Align2::LEFT_TOP,
+                    "Schedules and watchers keep running. Quit from the tray icon's menu.",
+                    FontId::new(theme::text_px(11.5, s), theme::family_medium()),
+                    theme::ink_muted(),
+                );
+            }
+            dirty |= toggle_row(ui, "Play a sound when a build or run finishes", &mut c.sound_on_finish, s);
+            if c.sound_on_finish {
+                dirty |= toggle_row(ui, "Only while Onyx is in the background", &mut c.sound_only_unfocused, s);
+            }
+            dirty |= toggle_row(ui, "Check GitHub for a new Onyx version on startup", &mut c.check_updates, s);
 
             section(ui, "Logs & backups", s);
             let mut days = c.log_retention_days;
@@ -244,8 +301,8 @@ fn path_row(
         Pos2::new(r.left(), r.top()),
         Align2::LEFT_TOP,
         label,
-        FontId::new(px(11.5), theme::family_label()),
-        theme::INK_MUTED,
+        FontId::new(theme::text_px(11.5, s), theme::family_label()),
+        theme::ink_muted(),
     );
     let mut shown = value.to_string();
     let field = Rect::from_min_size(
@@ -292,7 +349,7 @@ fn toggle_row(ui: &mut egui::Ui, label: &str, value: &mut bool, s: f32) -> bool 
     let r = alloc(ui, 34.0, s);
     let tog = Rect::from_min_size(Pos2::new(r.left(), r.top()), Vec2::new(px(44.0), px(24.0)));
     let mut on = *value;
-    let changed = kit::toggle(ui, tog, &mut on, s).changed();
+    let changed = kit::toggle(ui, tog, &mut on, label, s).changed();
     if changed {
         *value = on;
     }
@@ -300,8 +357,8 @@ fn toggle_row(ui: &mut egui::Ui, label: &str, value: &mut bool, s: f32) -> bool 
         Pos2::new(tog.right() + px(12.0), tog.center().y),
         Align2::LEFT_CENTER,
         label,
-        FontId::new(px(12.5), theme::family_medium()),
-        theme::INK_DIM,
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+        theme::ink_dim(),
     );
     changed
 }
@@ -321,8 +378,8 @@ fn stepper(
         Pos2::new(r.left(), r.top() + px(16.0)),
         Align2::LEFT_CENTER,
         label,
-        FontId::new(px(12.5), theme::family_medium()),
-        theme::INK_DIM,
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+        theme::ink_dim(),
     );
     let minus = Rect::from_min_size(
         Pos2::new(r.left() + px(320.0), r.top()),
@@ -336,8 +393,8 @@ fn stepper(
         Pos2::new((minus.right() + plus.left()) / 2.0, r.top() + px(15.0)),
         Align2::CENTER_CENTER,
         value.to_string(),
-        FontId::new(px(13.5), theme::family_semibold()),
-        theme::INK,
+        FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
+        theme::ink(),
     );
     let mut changed = false;
     if Button::new("-", ButtonKind::Secondary)

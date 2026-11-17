@@ -24,24 +24,37 @@ fn pending_work(app: &App) -> Vec<&'static str> {
     work
 }
 
-pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
-    let ctx = ui.ctx().clone();
-
+/// Decide what a close request does. Called from `App::logic`, which eframe also
+/// runs while the window is hidden or minimized (with no ui pass), so the guard
+/// can't be skipped by closing from the taskbar or the tray.
+pub fn intercept_close(app: &mut App, ctx: &egui::Context) {
     if app.quitting {
         ctx.send_viewport_cmd(ViewportCommand::Close);
         return;
     }
-
-    let work = pending_work(app);
-    if ctx.input(|i| i.viewport().close_requested()) {
-        if !work.is_empty() {
-            ctx.send_viewport_cmd(ViewportCommand::CancelClose);
-            app.confirm_quit = true;
-        } else {
-            return;
-        }
+    if !ctx.input(|i| i.viewport().close_requested()) {
+        return;
     }
+    // Close to tray: hiding stops nothing, so it skips the work-in-progress check.
+    // The tray's own Quit sets `force_quit` and gets the normal guard below.
+    if !app.force_quit && crate::config::load_settings().is_ok_and(|c| c.close_to_tray) {
+        ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+        app.hide_to_tray(ctx);
+        return;
+    }
+    if !pending_work(app).is_empty() {
+        ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+        app.confirm_quit = true;
+        // The question needs a visible window to be answered.
+        app.tray = None;
+        ctx.send_viewport_cmd(ViewportCommand::Visible(true));
+        ctx.send_viewport_cmd(ViewportCommand::Minimized(false));
+        ctx.send_viewport_cmd(ViewportCommand::Focus);
+    }
+}
 
+pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
+    let work = pending_work(app);
     if !app.confirm_quit {
         return;
     }
@@ -81,15 +94,15 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 Pos2::new(x, d.top() + px(48.0)),
                 Align2::LEFT_TOP,
                 "Quit Onyx anyway?",
-                FontId::new(px(16.0), theme::family_semibold()),
-                theme::INK,
+                FontId::new(theme::text_px(16.0, s), theme::family_semibold()),
+                theme::ink(),
             );
             painter.text(
                 Pos2::new(x, d.top() + px(80.0)),
                 Align2::LEFT_TOP,
                 summary.as_str(),
-                FontId::new(px(12.5), theme::family_medium()),
-                theme::INK_MUTED,
+                FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+                theme::ink_muted(),
             );
             let by = d.bottom() - px(26.0) - px(42.0);
             if Button::new("Keep working", ButtonKind::Secondary)
@@ -131,5 +144,6 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
         app.quitting = true;
     } else if cancel || !open {
         app.confirm_quit = false;
+        app.force_quit = false;
     }
 }

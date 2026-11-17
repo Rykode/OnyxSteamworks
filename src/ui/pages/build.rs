@@ -38,6 +38,9 @@ pub(crate) fn pump(app: &mut App, ctx: &egui::Context) {
                 BuildResult::Cancelled => (kit::ToastLevel::Warning, "Authorization cancelled"),
             }
         } else {
+            if !matches!(res, BuildResult::Cancelled) {
+                app.on_run_finished(ctx, matches!(res, BuildResult::Success { .. }));
+            }
             match res {
                 BuildResult::Success { .. } => (kit::ToastLevel::Success, "Build finished"),
                 BuildResult::Failure { .. } => (kit::ToastLevel::Error, "Build failed"),
@@ -174,16 +177,16 @@ fn header(app: &mut App, ui: &mut egui::Ui, layout: &Layout, project: &Project, 
         .painter()
         .layout_no_wrap(
             "Build".to_owned(),
-            FontId::new(px(28.0), theme::family_semibold()),
-            theme::INK,
+            FontId::new(theme::text_px(28.0, s), theme::family_semibold()),
+            theme::ink(),
         )
         .size()
         .x;
     let name = if project.name.is_empty() { "Untitled" } else { project.name.as_str() };
-    let name_font = FontId::new(px(13.5), theme::family_semibold());
+    let name_font = FontId::new(theme::text_px(13.5, s), theme::family_semibold());
     let name_w = ui
         .painter()
-        .layout_no_wrap(name.to_owned(), name_font.clone(), theme::INK)
+        .layout_no_wrap(name.to_owned(), name_font.clone(), theme::ink())
         .size()
         .x;
     let pill = Rect::from_min_size(
@@ -193,11 +196,12 @@ fn header(app: &mut App, ui: &mut egui::Ui, layout: &Layout, project: &Project, 
     let resp = ui
         .interact(pill, ui.make_persistent_id("build_project_pill"), egui::Sense::click())
         .on_hover_cursor(egui::CursorIcon::PointingHand);
+    crate::ui::kit::accessible(&resp, pill, egui::Role::ComboBox, &format!("Project: {}", project.name), None, px(theme::RADIUS_FIELD));
     kit::bordered(
         ui.painter(),
         pill,
-        if resp.hovered() { theme::FIELD_HI } else { theme::FIELD },
-        theme::LINE_SOFT,
+        if resp.hovered() { theme::field_hi() } else { theme::field() },
+        theme::line_soft(),
         px(theme::RADIUS_FIELD),
     );
     let tile = Rect::from_center_size(Pos2::new(pill.left() + px(23.0), pill.center().y), Vec2::splat(px(21.0)));
@@ -207,14 +211,14 @@ fn header(app: &mut App, ui: &mut egui::Ui, layout: &Layout, project: &Project, 
         Align2::LEFT_CENTER,
         name,
         name_font,
-        theme::INK,
+        theme::ink(),
     );
     ui.painter().text(
         Pos2::new(pill.right() - px(18.0), pill.center().y),
         Align2::CENTER_CENTER,
         theme::icon::CARET_DOWN.to_string(),
         theme::icon_font(px(12.0), false),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     let mut pick = None;
     egui::Popup::menu(&resp).show(|ui| {
@@ -243,7 +247,7 @@ fn header(app: &mut App, ui: &mut egui::Ui, layout: &Layout, project: &Project, 
             if b.name.is_empty() { "branch".to_string() } else { b.name.clone() },
             crate::ui::pages::projects::level_color(b.level),
         ),
-        None => ("default".to_string(), theme::INK_MUTED),
+        None => ("default".to_string(), theme::ink_muted()),
     };
     let badge = kit::badge(
         ui.painter(),
@@ -258,6 +262,7 @@ fn header(app: &mut App, ui: &mut egui::Ui, layout: &Layout, project: &Project, 
         let bresp = ui
             .interact(badge, ui.make_persistent_id("build_branch_badge"), egui::Sense::click())
             .on_hover_cursor(egui::CursorIcon::PointingHand);
+        crate::ui::kit::accessible(&bresp, badge, egui::Role::ComboBox, &format!("Branch: {}", selected_branch(app, project)), None, badge.height() / 2.0);
         egui::Popup::menu(&bresp).show(|ui| {
             for (i, b) in project.branches.iter().enumerate() {
                 let name = if b.name.is_empty() { "branch" } else { b.name.as_str() };
@@ -349,12 +354,12 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
         let on = if rec.branch.is_empty() { "default" } else { rec.branch.as_str() };
         (
             theme::icon::X,
-            if failed { theme::DANGER } else { theme::WARNING },
+            if failed { theme::danger() } else { theme::warning() },
             if failed { "Last build failed" } else { "Last build cancelled" }.to_string(),
             format!("On {on} {}", crate::ui::pages::history::rel_time(rec.timestamp)),
         )
     } else if st.running && st.authorizing {
-        (theme::icon::GEAR, theme::ACCENT_HI, "Authorizing account".to_string(), format!("{} elapsed", clock))
+        (theme::icon::GEAR, theme::accent_hi(), "Authorizing account".to_string(), format!("{} elapsed", clock))
     } else if st.running {
         let (glyph, title) = match st.stage {
             Some(Stage::Connecting) | None => (theme::icon::ROCKET, "Connecting to Steam"),
@@ -363,24 +368,24 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
             Some(Stage::Uploading) => (theme::icon::UPLOAD, "Uploading to Steam"),
             Some(Stage::Committing) | Some(Stage::Finished) => (theme::icon::PACKAGE, "Committing build"),
         };
-        (glyph, theme::ACCENT_HI, title.to_string(), format!("Build {number} · {branch} · {clock} elapsed"))
+        (glyph, theme::accent_hi(), title.to_string(), format!("Build {number} · {branch} · {clock} elapsed"))
     } else {
         match &st.outcome {
             Some(BuildResult::Success { .. }) => (
                 theme::icon::CHECK,
-                theme::SUCCESS,
+                theme::success(),
                 "Build finished".to_string(),
                 format!("Build {number} · {branch} · took {clock}"),
             ),
             Some(BuildResult::Failure { .. }) => (
                 theme::icon::X,
-                theme::DANGER,
+                theme::danger(),
                 "Build failed".to_string(),
                 format!("Build {number} · {branch} · after {clock}"),
             ),
             Some(BuildResult::Cancelled) => (
                 theme::icon::X,
-                theme::WARNING,
+                theme::warning(),
                 "Build cancelled".to_string(),
                 format!("Build {number} · {branch} · after {clock}"),
             ),
@@ -392,7 +397,7 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
                     .unwrap_or_else(|| "no builds yet".to_string());
                 (
                     theme::icon::ROCKET,
-                    theme::ACCENT_HI,
+                    theme::accent_hi(),
                     "Ready to build".to_string(),
                     format!("Build {} · {branch} · {last}", number),
                 )
@@ -400,11 +405,17 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
         }
     };
     let links_to_log = last_unhappy.is_some();
+    let spoken = format!("{title}. {sub}");
     if let Some(rec) = last_unhappy {
         let resp = ui.interact(card, ui.make_persistent_id("build_last_result"), egui::Sense::click());
-        resp.widget_info(|| {
-            egui::WidgetInfo::labeled(egui::Role::Button, true, "Open the last build in History")
-        });
+        crate::ui::kit::accessible(
+            &resp,
+            card,
+            egui::Role::Button,
+            &format!("{spoken}. Open its log in History"),
+            None,
+            px(kit::RADIUS_CARD_PX),
+        );
         // Same hover treatment as the project list rows.
         let hover = ui.ctx().animate_bool_with_time(
             ui.make_persistent_id("build_last_result_hover"),
@@ -418,11 +429,8 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
             ui.painter().rect_filled(
                 card,
                 theme::corner(px(kit::RADIUS_CARD_PX)),
-                theme::with_alpha(theme::SURFACE_2, (hover * 200.0) as u8),
+                theme::with_alpha(theme::surface_2(), (hover * 200.0) as u8),
             );
-        }
-        if resp.has_focus() {
-            theme::focus_ring(ui.painter(), card, px(kit::RADIUS_CARD_PX), theme::FOCUS);
         }
         if resp.clicked() {
             app.history_ui.open_detail(rec);
@@ -441,21 +449,33 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
     );
     let tx = tile.right() + px(16.5);
     let clip = Rect::from_min_max(Pos2::new(tx, card.top()), Pos2::new(card.right() - px(14.0), card.bottom()));
-    painter.with_clip_rect(clip).text(
+    kit::fit_text(
+        painter,
         Pos2::new(tx, card.center().y - px(10.5)),
         Align2::LEFT_CENTER,
-        title,
-        FontId::new(px(17.0), theme::family_semibold()),
-        theme::INK,
+        &title,
+        FontId::new(theme::text_px(17.0, s), theme::family_semibold()),
+        theme::ink(),
+        clip.width(),
     );
-    let sub_font = FontId::new(px(13.0), theme::family_medium());
-    let sub_rect = painter.with_clip_rect(clip).text(
+    let sub_font = FontId::new(theme::text_px(13.0, s), theme::family_medium());
+    let link_w = if links_to_log {
+        painter.layout_no_wrap("View log".to_owned(), sub_font.clone(), theme::ink()).size().x + px(8.0)
+    } else {
+        0.0
+    };
+    let (sub_rect, _) = kit::fit_text(
+        painter,
         Pos2::new(tx, card.center().y + px(12.0)),
         Align2::LEFT_CENTER,
-        sub,
+        &sub,
         sub_font.clone(),
-        theme::INK_MUTED,
+        theme::ink_muted(),
+        clip.width() - link_w,
     );
+    if !links_to_log {
+        kit::readable(ui, card, egui::Role::Status, &spoken, true);
+    }
     if links_to_log {
         // Link colour matches the other in-card links (e.g. the checklist template link).
         painter.with_clip_rect(clip).text(
@@ -463,7 +483,7 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
             Align2::LEFT_CENTER,
             "View log",
             sub_font,
-            theme::ACCENT_HI,
+            theme::accent_hi(),
         );
     }
     if st.running {
@@ -496,20 +516,20 @@ fn stat_tiles(app: &App, ui: &mut egui::Ui, row: Rect, project: &Project, s: f32
     let changed = match app.build_ui.review.summary_for(&project.id) {
         Some(d) => (
             format!("+{} · −{} files", d.added + d.modified, d.removed),
-            theme::INK,
+            theme::ink(),
         ),
-        None => ("Not scanned".to_string(), theme::INK_FAINT),
+        None => ("Not scanned".to_string(), theme::ink_faint()),
     };
     let preflight = match app.build_ui.preflight.outcome() {
-        Some((0, 0)) => ("Passed".to_string(), theme::SUCCESS),
-        Some((0, w)) => (format!("{w} warning{}", if w == 1 { "" } else { "s" }), theme::WARNING),
-        Some((e, _)) => (format!("{e} blocking"), theme::DANGER),
-        None => ("Not run".to_string(), theme::INK_FAINT),
+        Some((0, 0)) => ("Passed".to_string(), theme::success()),
+        Some((0, w)) => (format!("{w} warning{}", if w == 1 { "" } else { "s" }), theme::warning()),
+        Some((e, _)) => (format!("{e} blocking"), theme::danger()),
+        None => ("Not run".to_string(), theme::ink_faint()),
     };
     let app_id = if project.app_id.is_empty() { "-".to_string() } else { project.app_id.clone() };
     let tiles = [
-        ("App ID", app_id, theme::INK, true),
-        ("Depots", depots, theme::INK, false),
+        ("App ID", app_id, theme::ink(), true),
+        ("Depots", depots, theme::ink(), false),
         ("Changed", changed.0, changed.1, false),
         ("Preflight", preflight.0, preflight.1, false),
     ];
@@ -519,29 +539,36 @@ fn stat_tiles(app: &App, ui: &mut egui::Ui, row: Rect, project: &Project, s: f32
             Vec2::new(w, row.height()),
         );
         kit::card(ui.painter(), r, s);
+        kit::readable(ui, r, egui::Role::Label, &format!("{label}: {value}"), false);
         kit::caps(
             ui.painter(),
             Pos2::new(r.left() + px(15.0), r.top() + px(24.0)),
             Align2::LEFT_CENTER,
             label,
             11.0,
-            theme::INK_FAINT,
+            theme::ink_faint(),
             s,
         );
         let font = if *mono {
-            FontId::new(px(15.0), egui::FontFamily::Monospace)
+            FontId::new(theme::text_px(15.0, s), egui::FontFamily::Monospace)
         } else {
-            FontId::new(px(16.5), theme::family_semibold())
+            FontId::new(theme::text_px(16.5, s), theme::family_semibold())
         };
-        ui.painter()
-            .with_clip_rect(r.shrink(px(4.0)))
-            .text(Pos2::new(r.left() + px(15.0), r.top() + px(47.0)), Align2::LEFT_CENTER, value, font, *color);
+        kit::fit_text(
+            ui.painter(),
+            Pos2::new(r.left() + px(15.0), r.top() + px(47.0)),
+            Align2::LEFT_CENTER,
+            value,
+            font,
+            *color,
+            r.width() - px(30.0),
+        );
     }
 }
 
 fn options_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, s: f32, ctx: &egui::Context) {
     let px = |v: f32| theme::px(v, s);
-    kit::card_title(ui.painter(), card, "Run options", s);
+    kit::card_title(ui, card, "Run options", s);
     let area = Rect::from_min_max(
         Pos2::new(card.left() + px(20.0), card.top() + px(44.0)),
         Pos2::new(card.right() - px(14.0), card.bottom() - px(10.0)),
@@ -565,13 +592,13 @@ fn options_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project,
                 .show(ui, Rect::from_min_size(Pos2::new(x, y), Vec2::new(w, px(36.0))), s);
             y += px(50.0);
             let tog = Rect::from_min_size(Pos2::new(x, y), Vec2::new(px(40.0), px(22.0)));
-            kit::toggle(ui, tog, &mut app.build_ui.preview_only, s);
+            kit::toggle(ui, tog, &mut app.build_ui.preview_only, "Preview only", s);
             ui.painter().text(
                 Pos2::new(tog.right() + px(10.0), tog.center().y),
                 Align2::LEFT_CENTER,
                 "Preview only",
-                FontId::new(px(13.0), theme::family_medium()),
-                theme::INK_DIM,
+                FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+                theme::ink_dim(),
             );
             y += px(34.0);
             set_live_row(app, ui, Pos2::new(x, y), w, project, s);
@@ -581,13 +608,13 @@ fn options_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project,
             if !cached {
                 let auth = Rect::from_min_size(Pos2::new(x, y), Vec2::new(w, px(32.0)));
                 let has_user = !project.steam_username.trim().is_empty();
-                ui.painter().circle_filled(Pos2::new(x + px(4.0), auth.center().y), px(3.5), theme::WARNING);
+                ui.painter().circle_filled(Pos2::new(x + px(4.0), auth.center().y), px(3.5), theme::warning());
                 ui.painter().text(
                     Pos2::new(x + px(14.0), auth.center().y),
                     Align2::LEFT_CENTER,
                     if has_user { "No cached Steam login" } else { "No Steam account set" },
-                    FontId::new(px(12.5), theme::family_medium()),
-                    theme::INK_DIM,
+                    FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+                    theme::ink_dim(),
                 );
                 let bw = px(118.0);
                 if Button::new("Authorize", ButtonKind::Secondary)
@@ -626,15 +653,15 @@ fn options_card_h(app: &App, project: &Project, s: f32) -> f32 {
 fn set_live_row(app: &mut App, ui: &mut egui::Ui, at: Pos2, w: f32, project: &Project, s: f32) {
     let px = |v: f32| theme::px(v, s);
     let branch = selected_branch(app, project);
-    let font = FontId::new(px(13.0), theme::family_medium());
+    let font = FontId::new(theme::text_px(13.0, s), theme::family_medium());
     let row = Rect::from_min_size(at, Vec2::new(w, px(22.0)));
     if branch.trim().is_empty() || branch.eq_ignore_ascii_case("default") {
         ui.painter().text(
             Pos2::new(at.x, row.center().y),
             Align2::LEFT_CENTER,
             "Uploads only. Set the default branch live in Steamworks.",
-            FontId::new(px(12.5), theme::family_medium()),
-            theme::INK_MUTED,
+            FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+            theme::ink_muted(),
         );
         return;
     }
@@ -645,9 +672,8 @@ fn set_live_row(app: &mut App, ui: &mut egui::Ui, at: Pos2, w: f32, project: &Pr
         format!("Set live on {branch}")
     };
     let tog = Rect::from_min_size(at, Vec2::new(px(40.0), px(22.0)));
-    let resp = kit::toggle(ui, tog, &mut app.build_ui.set_live, s);
+    kit::toggle(ui, tog, &mut app.build_ui.set_live, &label, s);
     let on = app.build_ui.set_live;
-    resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Switch, true, on, &label));
     let tx = tog.right() + px(10.0);
     let clip = Rect::from_min_max(Pos2::new(tx, row.top()), Pos2::new(row.right(), row.bottom()));
     let painter = ui.painter().with_clip_rect(clip);
@@ -655,7 +681,7 @@ fn set_live_row(app: &mut App, ui: &mut egui::Ui, at: Pos2, w: f32, project: &Pr
     let suffix_w = if on {
         0.0
     } else {
-        painter.layout_no_wrap(suffix.to_owned(), font.clone(), theme::INK).size().x + px(8.0)
+        painter.layout_no_wrap(suffix.to_owned(), font.clone(), theme::ink()).size().x + px(8.0)
     };
     let shown = kit::input::head_fit(&painter, &label, &font, (clip.width() - suffix_w).max(px(40.0)));
     let drawn = painter.text(
@@ -663,7 +689,7 @@ fn set_live_row(app: &mut App, ui: &mut egui::Ui, at: Pos2, w: f32, project: &Pr
         Align2::LEFT_CENTER,
         &shown,
         font.clone(),
-        if live_level && on { theme::WARNING } else { theme::INK_DIM },
+        if live_level && on { theme::warning() } else { theme::ink_dim() },
     );
     if !on {
         painter.text(
@@ -671,7 +697,7 @@ fn set_live_row(app: &mut App, ui: &mut egui::Ui, at: Pos2, w: f32, project: &Pr
             Align2::LEFT_CENTER,
             suffix,
             font,
-            theme::INK_MUTED,
+            theme::ink_muted(),
         );
     }
 }
@@ -685,6 +711,43 @@ fn authorize(app: &mut App, project: &Project, ctx: &egui::Context) {
     } else {
         app.toasts
             .push(kit::ToastLevel::Success, "Authorizing account");
+    }
+}
+
+/// Run a recorded build again with the settings it used: the stored project
+/// snapshot, branch, description, and its preview / set-live choice. Records from
+/// before those choices were stored rebuild as a preview, never as a live push.
+/// The Live-branch confirmation and preflight still apply.
+pub(crate) fn rebuild(app: &mut App, rec: &crate::model::BuildRecord, ctx: &egui::Context) {
+    let Ok(project) = serde_json::from_str::<Project>(&rec.settings_json) else {
+        app.toasts.push(kit::ToastLevel::Error, "Stored settings are unreadable");
+        return;
+    };
+    let Some(idx) = app.projects.iter().position(|p| p.id == project.id) else {
+        app.toasts.push(kit::ToastLevel::Error, "That project no longer exists");
+        return;
+    };
+    if app.build_ui.running {
+        app.toasts.push(kit::ToastLevel::Warning, "A build is already running");
+        return;
+    }
+    app.build_ui.project_sel = idx;
+    app.build_ui.branch_sel = project
+        .branches
+        .iter()
+        .position(|b| b.name == rec.branch)
+        .unwrap_or(0);
+    app.build_ui.description = rec.description.clone();
+    app.build_ui.preview_only = rec.preview.unwrap_or(true);
+    app.build_ui.set_live = rec.set_live.unwrap_or(false);
+    let note = match rec.preview {
+        None => "Rebuilding as a preview (this record predates saved run options)",
+        Some(true) => "Rebuilding as a preview with saved settings",
+        Some(false) => "Rebuilding with saved settings",
+    };
+    match guard::launch(app, &rec.branch, Some(project), ctx) {
+        Ok(()) => app.toasts.push(kit::ToastLevel::Success, note),
+        Err(e) => app.toasts.push(kit::ToastLevel::Error, e),
     }
 }
 

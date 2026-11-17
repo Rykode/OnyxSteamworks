@@ -110,13 +110,13 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Some(data) => render(ui, body, &data, &cfg, s),
         None => {
             let c = body.center();
-            kit::progress_ring(ui, c, px(16.0), 0.25, theme::INK_DIM, s);
+            kit::progress_ring(ui, c, px(16.0), 0.25, theme::ink_dim(), s);
             ui.painter().text(
                 Pos2::new(c.x, c.y + px(30.0)),
                 Align2::CENTER_CENTER,
                 "Analyzing builds...",
-                FontId::new(px(12.5), theme::family_medium()),
-                theme::INK_MUTED,
+                FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+                theme::ink_muted(),
             );
         }
     }
@@ -246,14 +246,14 @@ fn banner(ui: &mut egui::Ui, rect: Rect, growth: f32, s: f32) {
     kit::bordered(
         &ui.painter().clone(),
         rect,
-        theme::SURFACE_2,
-        theme::WARNING,
+        theme::surface_2(),
+        theme::warning(),
         px(theme::RADIUS_FIELD),
     );
     ui.painter().circle_filled(
         Pos2::new(rect.left() + px(16.0), rect.center().y),
         px(4.0),
-        theme::WARNING,
+        theme::warning(),
     );
     let msg = format!(
         "Latest build is {:.0}% larger than the previous one.",
@@ -263,8 +263,8 @@ fn banner(ui: &mut egui::Ui, rect: Rect, growth: f32, s: f32) {
         Pos2::new(rect.left() + px(30.0), rect.center().y),
         Align2::LEFT_CENTER,
         msg,
-        FontId::new(px(12.5), theme::family_semibold()),
-        theme::INK,
+        FontId::new(theme::text_px(12.5, s), theme::family_semibold()),
+        theme::ink(),
     );
 }
 
@@ -280,8 +280,8 @@ fn chart_panel(
     kit::bordered(
         &ui.painter().clone(),
         rect,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_PANEL_MIN),
     );
     kit::label(
@@ -294,8 +294,8 @@ fn chart_panel(
         Pos2::new(rect.right() - px(16.0), rect.top() + px(20.0)),
         Align2::RIGHT_CENTER,
         latest,
-        FontId::new(px(14.0), theme::family_semibold()),
-        theme::INK,
+        FontId::new(theme::text_px(14.0, s), theme::family_semibold()),
+        theme::ink(),
     );
     let plot = Rect::from_min_max(
         Pos2::new(rect.left() + px(16.0), rect.top() + px(48.0)),
@@ -306,8 +306,8 @@ fn chart_panel(
             plot.center(),
             Align2::CENTER_CENTER,
             "Need 2+ builds",
-            FontId::new(px(11.5), theme::family_medium()),
-            theme::INK_MUTED,
+            FontId::new(theme::text_px(11.5, s), theme::family_medium()),
+            theme::ink_muted(),
         );
         return;
     }
@@ -317,15 +317,15 @@ fn chart_panel(
             Pos2::new(plot.left(), plot.bottom()),
             Pos2::new(plot.right(), plot.bottom()),
         ],
-        egui::Stroke::new(1.0, theme::LINE),
+        egui::Stroke::new(1.0, theme::line()),
     );
-    kit::line_chart(ui, plot, samples, theme::INK, s);
+    kit::line_chart(ui, plot, samples, theme::ink(), s);
     let n = samples.len();
     let last = samples[n - 1];
     let cx = plot.left() + plot.width();
     let cy = plot.bottom() - plot.height() * (last / max).clamp(0.0, 1.0);
     ui.painter()
-        .circle_filled(Pos2::new(cx, cy), px(3.0), theme::INK);
+        .circle_filled(Pos2::new(cx, cy), px(3.0), theme::ink());
 }
 
 fn success_panel(ui: &mut egui::Ui, rect: Rect, data: &Analytics, s: f32) {
@@ -333,8 +333,8 @@ fn success_panel(ui: &mut egui::Ui, rect: Rect, data: &Analytics, s: f32) {
     kit::bordered(
         &ui.painter().clone(),
         rect,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_PANEL_MIN),
     );
     kit::label(
@@ -345,26 +345,26 @@ fn success_panel(ui: &mut egui::Ui, rect: Rect, data: &Analytics, s: f32) {
     );
     let center = Pos2::new(rect.center().x, rect.center().y + px(8.0));
     let color = if data.success_rate >= 0.8 {
-        theme::SUCCESS
+        theme::success()
     } else if data.success_rate >= 0.5 {
-        theme::WARNING
+        theme::warning()
     } else {
-        theme::DANGER
+        theme::danger()
     };
     kit::progress_ring(ui, center, px(34.0), data.success_rate, color, s);
     ui.painter().text(
         center,
         Align2::CENTER_CENTER,
         format!("{:.0}%", data.success_rate * 100.0),
-        FontId::new(px(18.0), theme::family_semibold()),
-        theme::INK,
+        FontId::new(theme::text_px(18.0, s), theme::family_semibold()),
+        theme::ink(),
     );
     ui.painter().text(
         Pos2::new(center.x, rect.bottom() - px(16.0)),
         Align2::CENTER_CENTER,
         format!("{} builds", data.total_builds),
-        FontId::new(px(11.5), theme::family_medium()),
-        theme::INK_MUTED,
+        FontId::new(theme::text_px(11.5, s), theme::family_medium()),
+        theme::ink_muted(),
     );
 }
 
@@ -376,8 +376,8 @@ fn last_builds(ui: &mut egui::Ui, rect: Rect, points: &[BuildPoint], s: f32) {
             Pos2::new(rect.left(), rect.top() + px(10.0)),
             Align2::LEFT_TOP,
             "No builds with manifests yet.",
-            FontId::new(px(12.5), theme::family_medium()),
-            theme::INK_MUTED,
+            FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+            theme::ink_muted(),
         );
         return;
     }
@@ -390,14 +390,14 @@ fn last_builds(ui: &mut egui::Ui, rect: Rect, points: &[BuildPoint], s: f32) {
         kit::bordered(
             ui.painter(),
             cr,
-            theme::SURFACE_2,
-            theme::LINE,
+            theme::surface_2(),
+            theme::line(),
             px(theme::RADIUS_CARD),
         );
         let color = if p.success {
-            theme::SUCCESS
+            theme::success()
         } else {
-            theme::DANGER
+            theme::danger()
         };
         ui.painter().circle_filled(
             Pos2::new(cr.left() + px(12.0), cr.top() + px(14.0)),
@@ -408,15 +408,15 @@ fn last_builds(ui: &mut egui::Ui, rect: Rect, points: &[BuildPoint], s: f32) {
             Pos2::new(cr.left() + px(12.0), cr.center().y + px(2.0)),
             Align2::LEFT_CENTER,
             human_size(p.size),
-            FontId::new(px(12.5), theme::family_semibold()),
-            theme::INK,
+            FontId::new(theme::text_px(12.5, s), theme::family_semibold()),
+            theme::ink(),
         );
         ui.painter().text(
             Pos2::new(cr.left() + px(12.0), cr.bottom() - px(12.0)),
             Align2::LEFT_CENTER,
             super::fmt_duration(p.duration_ms),
-            FontId::new(px(11.0), theme::family_medium()),
-            theme::INK_MUTED,
+            FontId::new(theme::text_px(11.0, s), theme::family_medium()),
+            theme::ink_muted(),
         );
     }
 }

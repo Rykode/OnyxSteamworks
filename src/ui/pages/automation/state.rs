@@ -154,11 +154,14 @@ impl PipelineState {
         }
     }
 
-    pub fn delete_pipeline(&mut self) {
+    pub fn delete_pipeline(&mut self) -> Option<Pipeline> {
         if self.pipeline_sel < self.draft.pipelines.len() {
-            self.draft.pipelines.remove(self.pipeline_sel);
+            let removed = self.draft.pipelines.remove(self.pipeline_sel);
             self.pipeline_sel = self.pipeline_sel.saturating_sub(1);
             self.expanded = None;
+            Some(removed)
+        } else {
+            None
         }
     }
 
@@ -190,13 +193,23 @@ impl PipelineState {
         self.expanded = None;
     }
 
-    pub fn remove_step(&mut self, i: usize) {
-        if let Some(steps) = self.steps_mut()
-            && i < steps.len()
-        {
-            steps.remove(i);
-        }
+    pub fn remove_step(&mut self, i: usize) -> Option<PipelineStep> {
+        let removed = match self.steps_mut() {
+            Some(steps) if i < steps.len() => Some(steps.remove(i)),
+            _ => None,
+        };
         self.expanded = None;
+        removed
+    }
+
+    /// Put a removed step back into pipeline `pipeline_id` of the draft (Undo).
+    pub fn insert_step(&mut self, pipeline_id: &str, i: usize, step: PipelineStep) -> bool {
+        let Some(pipe) = self.draft.pipelines.iter_mut().find(|p| p.id == pipeline_id) else {
+            return false;
+        };
+        let i = i.min(pipe.steps.len());
+        pipe.steps.insert(i, step);
+        true
     }
 
     pub fn move_step(&mut self, i: usize, up: bool) {

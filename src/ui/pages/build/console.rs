@@ -17,7 +17,7 @@ pub fn show(state: &mut BuildState, ui: &mut egui::Ui, card: Rect, s: f32, ctx: 
         Align2::LEFT_CENTER,
         "Console",
         12.5,
-        theme::INK_MUTED,
+        theme::ink_muted(),
         s,
     );
     let copy_w = px(90.0);
@@ -25,14 +25,38 @@ pub fn show(state: &mut BuildState, ui: &mut egui::Ui, card: Rect, s: f32, ctx: 
         Pos2::new(card.right() - px(21.0) - copy_w, card.top() + px(18.0)),
         Vec2::new(copy_w, px(36.0)),
     );
+    let errors = state.log.iter().filter(|l| l.error).count();
+    let errors_w = if errors > 0 { px(128.0) } else { 0.0 };
+    let copy_errors = Rect::from_min_size(
+        Pos2::new(copy.left() - px(8.0) - errors_w, copy.top()),
+        Vec2::new(errors_w, copy.height()),
+    );
+    let search_right = if errors > 0 { copy_errors.left() } else { copy.left() };
     let search_rect = Rect::from_min_max(
         Pos2::new(title.right().max(card.left() + px(100.0) - px(12.0)) + px(12.0), card.top() + px(20.5)),
-        Pos2::new(copy.left() - px(12.0), card.top() + px(51.5)),
+        Pos2::new(search_right - px(12.0), card.top() + px(51.5)),
     );
-    Input::new(&mut state.search)
-        .hint("Filter log")
+    let search = Input::new(&mut state.search)
+        .hint("Filter log (Ctrl+F)")
         .icon(theme::icon::MAGNIFYING_GLASS)
         .show(ui, search_rect, s);
+    if !crate::ui::kit::modal_active(ctx)
+        && ctx.input(|i| i.modifiers.command && i.key_pressed(egui::Key::F))
+    {
+        search.request_focus();
+    }
+    if search.has_focus() && ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+        state.search.clear();
+        search.surrender_focus();
+    }
+    if errors > 0
+        && Button::new("Copy errors", ButtonKind::Secondary)
+            .icon(theme::icon::WARNING)
+            .show(ui, copy_errors, s)
+            .clicked()
+    {
+        ctx.copy_text(state.error_text());
+    }
     if Button::new("Copy", ButtonKind::Secondary)
         .icon(theme::icon::COPY)
         .show(ui, copy, s)
@@ -46,7 +70,7 @@ pub fn show(state: &mut BuildState, ui: &mut egui::Ui, card: Rect, s: f32, ctx: 
         Pos2::new(card.right() - px(21.0), card.bottom() - px(12.5)),
     );
     ui.painter()
-        .rect_filled(well, theme::corner(px(14.0)), theme::WELL);
+        .rect_filled(well, theme::corner(px(14.0)), theme::well());
     let log_rect = Rect::from_min_max(
         Pos2::new(well.left() + px(16.0), well.top() + px(14.0)),
         Pos2::new(well.right() - px(8.0), well.bottom() - px(10.0)),
@@ -68,7 +92,7 @@ pub fn show(state: &mut BuildState, ui: &mut egui::Ui, card: Rect, s: f32, ctx: 
     let id = ui.make_persistent_id("build_console");
     let jump = ctx.data_mut(|d| d.get_temp::<bool>(id.with("jump")).unwrap_or(false));
     let row_h = px(23.6);
-    let font = FontId::new(px(13.0), egui::FontFamily::Monospace);
+    let font = FontId::new(theme::text_px(13.0, s), egui::FontFamily::Monospace);
     let text_x = px(74.0);
 
     let mut cui = ui.new_child(egui::UiBuilder::new().max_rect(log_rect));
@@ -87,27 +111,30 @@ pub fn show(state: &mut BuildState, ui: &mut egui::Ui, card: Rect, s: f32, ctx: 
     sa.show_rows(&mut cui, row_h, rows.len().max(1), |ui, range| {
         last_visible = range.end;
         if rows.is_empty() {
-            let (r, _) =
+            let (r, resp) =
                 ui.allocate_exact_size(Vec2::new(ui.available_width(), row_h), Sense::hover());
+            resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, true, "No output yet."));
             ui.painter().text(
                 r.left_center(),
                 Align2::LEFT_CENTER,
                 "No output yet.",
                 font.clone(),
-                theme::INK_FAINT,
+                theme::ink_faint(),
             );
             return;
         }
         for i in range {
-            let (r, _) =
+            let (r, resp) =
                 ui.allocate_exact_size(Vec2::new(ui.available_width(), row_h), Sense::hover());
             if let Some((time, text, error)) = rows.get(i) {
+                let spoken = if *error { format!("{time} error: {text}") } else { format!("{time} {text}") };
+                resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, true, &spoken));
                 ui.painter().text(
                     r.left_center(),
                     Align2::LEFT_CENTER,
                     *time,
                     font.clone(),
-                    theme::INK_FAINT,
+                    theme::ink_faint(),
                 );
                 line(ui.painter(), Pos2::new(r.left() + text_x, r.center().y), text, *error, &font);
             }
@@ -132,26 +159,26 @@ pub fn show(state: &mut BuildState, ui: &mut egui::Ui, card: Rect, s: f32, ctx: 
 fn line(painter: &egui::Painter, pos: Pos2, text: &str, error: bool, font: &FontId) {
     let lower = text.to_ascii_lowercase();
     let color = if error {
-        theme::DANGER
+        theme::danger()
     } else if lower.starts_with("note") || lower.contains("warning") {
-        theme::WARNING
+        theme::warning()
     } else if lower.contains(" done") || lower.contains("success") || lower.contains("finished") {
-        theme::SUCCESS
+        theme::success()
     } else if lower.contains("upload") || lower.trim_end().ends_with('%') {
-        theme::ACCENT_HI
+        theme::accent_hi()
     } else {
-        theme::INK
+        theme::ink()
     };
     let trimmed = text.trim_end();
-    if color == theme::INK && trimmed.ends_with("OK") {
+    if color == theme::ink() && trimmed.ends_with("OK") {
         let head = &trimmed[..trimmed.len() - 2];
-        let r = painter.text(pos, Align2::LEFT_CENTER, head, font.clone(), theme::INK);
+        let r = painter.text(pos, Align2::LEFT_CENTER, head, font.clone(), theme::ink());
         painter.text(
             Pos2::new(r.right(), pos.y),
             Align2::LEFT_CENTER,
             "OK",
             font.clone(),
-            theme::SUCCESS,
+            theme::success(),
         );
     } else {
         painter.text(pos, Align2::LEFT_CENTER, text, font.clone(), color);

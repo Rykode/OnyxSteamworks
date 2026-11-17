@@ -50,7 +50,9 @@ impl BuildState {
         self.run_branch = branch.to_string();
         self.run_desc = run_desc;
         self.run_preview = self.preview_only;
-        self.run_set_live = self.set_live && !self.preview_only;
+        // SteamCMD can't set the default branch live, so such a run is upload-only.
+        let default_branch = branch.trim().is_empty() || branch.eq_ignore_ascii_case("default");
+        self.run_set_live = self.set_live && !self.preview_only && !default_branch;
         if crate::features::accounts::cached_login_for_project(project).is_some() {
             self.push_log("Using cached Steam login.", false);
         }

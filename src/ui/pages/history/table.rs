@@ -22,8 +22,8 @@ pub(super) fn show(
             rect.center(),
             egui::Align2::CENTER_CENTER,
             "No builds match these filters.",
-            FontId::new(px(13.0), theme::family_medium()),
-            theme::INK_MUTED,
+            FontId::new(theme::text_px(13.0, s), theme::family_medium()),
+            theme::ink_muted(),
         );
         return None;
     }
@@ -43,8 +43,8 @@ pub(super) fn show(
                 header.col(|ui| {
                     ui.label(
                         RichText::new(title)
-                            .font(FontId::new(px(11.0), theme::family_label()))
-                            .color(theme::INK_MUTED),
+                            .font(FontId::new(theme::text_px(11.0, s), theme::family_label()))
+                            .color(theme::ink_muted()),
                     );
                 });
             }
@@ -54,7 +54,7 @@ pub(super) fn show(
                 let i = row.index();
                 let rec = rows[i];
                 {
-                    cell(&mut row, &rel_time(rec.timestamp), theme::INK_DIM, s);
+                    cell(&mut row, &rel_time(rec.timestamp), theme::ink_dim(), s);
                     let name = projects
                         .iter()
                         .find(|p| p.id == rec.project_id)
@@ -67,17 +67,32 @@ pub(super) fn show(
                         })
                         .unwrap_or("Unknown")
                         .to_string();
-                    cell(&mut row, &name, theme::INK, s);
-                    cell(&mut row, &rec.branch, theme::INK_DIM, s);
+                    cell(&mut row, &name, theme::ink(), s);
+                    cell(&mut row, &rec.branch, theme::ink_dim(), s);
                     cell(
                         &mut row,
                         status_label(rec.status),
                         status_color(rec.status),
                         s,
                     );
-                    cell(&mut row, &fmt_duration(rec.duration_ms), theme::INK_DIM, s);
-                    cell(&mut row, &rec.description, theme::INK_DIM, s);
-                    if row.response().clicked() {
+                    cell(&mut row, &fmt_duration(rec.duration_ms), theme::ink_dim(), s);
+                    cell(&mut row, &rec.description, theme::ink_dim(), s);
+                    let resp = row.response();
+                    crate::ui::kit::accessible(
+                        &resp,
+                        resp.rect,
+                        egui::Role::Button,
+                        &format!(
+                            "{} build on {}, {}, {}",
+                            status_label(rec.status),
+                            rec.branch,
+                            name,
+                            rel_time(rec.timestamp)
+                        ),
+                        None,
+                        0.0,
+                    );
+                    if resp.clicked() {
                         clicked = Some(i);
                     }
                 }
@@ -90,7 +105,7 @@ fn cell(row: &mut egui_extras::TableRow, text: &str, color: egui::Color32, s: f3
     row.col(|ui| {
         ui.label(
             RichText::new(text)
-                .font(FontId::new(theme::px(12.5, s), theme::family_medium()))
+                .font(FontId::new(theme::text_px(12.5, s), theme::family_medium()))
                 .color(color),
         );
     });

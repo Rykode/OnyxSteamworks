@@ -34,8 +34,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
     kit::bordered(
         &ui.painter().clone(),
         card,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_PANEL_MIN),
     );
     let x = card.left() + px(20.0);
@@ -96,8 +96,8 @@ fn reset_modal(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 Pos2::new(x, d.top() + px(58.0)),
                 Align2::LEFT_TOP,
                 "This restores all settings to defaults. Your projects are kept.",
-                FontId::new(px(12.5), theme::family_medium()),
-                theme::INK_DIM,
+                FontId::new(theme::text_px(12.5, s), theme::family_medium()),
+                theme::ink_dim(),
             );
             let bw = px(150.0);
             let by = d.bottom() - px(26.0) - px(40.0);
