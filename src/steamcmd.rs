@@ -182,6 +182,9 @@ pub fn start_login(
 ) -> Result<BuildHandle, SteamError> {
     let log_path = log_path_for(None, "login")?;
     let exe = crate::features::maintenance::effective_steamcmd(project);
+    // A revoked token makes SteamCMD fail with Access Denied without ever
+    // prompting, so Authorize always starts from a fresh password login.
+    crate::features::accounts::forget_cached_token(&exe, &project.steam_username)?;
     let password = stored_password(&exe, project, LoginMode::Refresh);
     let mut cmd = command_for(&exe);
     cmd.arg("+@ShutdownOnFailedCommand").arg("1");

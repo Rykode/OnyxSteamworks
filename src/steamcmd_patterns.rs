@@ -31,7 +31,7 @@ pub fn login_failure_reason(line: &str) -> String {
     } else if l.contains("logon denied") {
         "Steam denied the login (Account Logon Denied). Steam Guard needs a fresh code: run Authorize on the Build page.".to_string()
     } else if l.contains("access denied") {
-        "Steam denied the login (Access Denied). The cached credentials are invalid or expired, or the account lacks publishing access. Sign in to SteamCMD once in a terminal to refresh them, then try again.".to_string()
+        "Steam denied the login (Access Denied). The cached login is invalid or expired, or the account lacks publishing access. Run Authorize on the Build page to sign in again.".to_string()
     } else if l.contains("expired") || (l.contains("cached") && l.contains("invalid")) {
         "The cached login expired. Run Authorize again.".to_string()
     } else if l.contains("two-factor") || l.contains("steam guard") {
