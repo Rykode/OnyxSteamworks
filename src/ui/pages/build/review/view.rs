@@ -27,7 +27,7 @@ pub(super) fn progress(ui: &mut egui::Ui, d: Rect, done: usize, total: usize, s:
         Pos2::new(x, d.center().y - px(16.0)),
         Align2::LEFT_CENTER,
         msg,
-        FontId::new(px(13.0), theme::family_medium()),
+        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
         theme::INK_DIM,
     );
     let bar = Rect::from_min_size(
@@ -82,14 +82,14 @@ pub(super) fn summary_row(ui: &egui::Ui, pos: Pos2, w: f32, summary: &DiffSummar
             Pos2::new(cx + px(16.0), pos.y),
             Align2::LEFT_CENTER,
             format!("{label}  {count}"),
-            FontId::new(px(13.0), theme::family_semibold()),
+            FontId::new(theme::text_px(13.0, s), theme::family_semibold()),
             theme::INK,
         );
         ui.painter().text(
             Pos2::new(cx + px(16.0), pos.y + px(18.0)),
             Align2::LEFT_CENTER,
             human_size(*bytes),
-            FontId::new(px(11.5), theme::family_medium()),
+            FontId::new(theme::text_px(11.5, s), theme::family_medium()),
             theme::INK_MUTED,
         );
     }
@@ -101,7 +101,7 @@ pub(super) fn summary_row(ui: &egui::Ui, pos: Pos2, w: f32, summary: &DiffSummar
             summary.changed(),
             human_size(summary.estimated_upload())
         ),
-        FontId::new(px(12.5), theme::family_medium()),
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
         theme::INK_DIM,
     );
 }
@@ -211,14 +211,14 @@ fn row(ui: &mut egui::Ui, entry: &manifest::DiffEntry, s: f32) {
         Pos2::new(r.left() + px(18.0), r.center().y),
         Align2::LEFT_CENTER,
         &entry.path,
-        FontId::new(px(12.0), theme::family_medium()),
+        FontId::new(theme::text_px(12.0, s), theme::family_medium()),
         theme::INK,
     );
     ui.painter().text(
         Pos2::new(r.right() - px(6.0), r.center().y),
         Align2::RIGHT_CENTER,
         human_size(entry.size),
-        FontId::new(px(11.5), egui::FontFamily::Monospace),
+        FontId::new(theme::text_px(11.5, s), egui::FontFamily::Monospace),
         theme::INK_MUTED,
     );
 }

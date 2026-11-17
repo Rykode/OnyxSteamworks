@@ -167,12 +167,6 @@ impl BuildState {
         Some(end.saturating_duration_since(start))
     }
 
-    pub fn stage_name(&self) -> &'static str {
-        self.stage
-            .and_then(|st| STAGES.iter().find(|(s, _)| *s == st).map(|(_, n)| *n))
-            .unwrap_or("Idle")
-    }
-
     pub fn drain(&mut self, ctx: &egui::Context) -> Option<BuildResult> {
         let mut finished = None;
         while let Ok(ev) = self.rx.try_recv() {

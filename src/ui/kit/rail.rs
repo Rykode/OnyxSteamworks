@@ -95,7 +95,7 @@ pub fn brand(ui: &egui::Ui, left: f32, cy: f32, s: f32) {
         Pos2::new(left + px(50.0), cy),
         Align2::LEFT_CENTER,
         "Onyx",
-        FontId::new(px(27.0), theme::family_brand()),
+        FontId::new(theme::text_px(27.0, s), theme::family_brand()),
         theme::INK,
     );
 }
@@ -114,6 +114,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
         let id = ui.make_persistent_id(("rail_slot", item.page));
         let resp = ui.interact(row, id, Sense::click());
         let is_active = item.page == st.active;
+        super::accessible(&resp, row, egui::Role::Tab, item.label, Some(is_active), px(theme::RADIUS_FIELD));
         if resp.clicked() {
             action = Some(RailAction::Navigate(item.page));
         }
@@ -147,7 +148,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
             Pos2::new(row.left() + px(44.0), row.center().y),
             Align2::LEFT_CENTER,
             item.label,
-            FontId::new(px(15.5), theme::family_medium()),
+            FontId::new(theme::text_px(15.5, s), theme::family_medium()),
             theme::lerp_color(
                 theme::lerp_color(theme::INK_DIM, theme::INK, hover),
                 theme::INK,
@@ -158,7 +159,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
             Pos2::new(row.right() - px(12.0), row.center().y),
             Align2::RIGHT_CENTER,
             shortcut_label(item.shortcut),
-            FontId::new(px(10.5), FontFamily::Monospace),
+            FontId::new(theme::text_px(10.5, s), FontFamily::Monospace),
             theme::INK_FAINT,
         );
         y += px(46.0);
@@ -167,6 +168,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
     let search = palette_row(rect, s);
     let sid = ui.make_persistent_id("search_pill");
     let sresp = ui.interact(search, sid, Sense::click());
+    super::accessible(&sresp, search, egui::Role::Button, "Command palette (Ctrl+K)", None, px(theme::RADIUS_FIELD));
     let shover = anim::anim_bool(&ctx, sid, sresp.hovered(), 0.12, anim::ease_out_cubic);
     kit_box(
         ui,
@@ -185,7 +187,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
         Pos2::new(search.left() + px(35.0), search.center().y),
         Align2::LEFT_CENTER,
         "Command palette",
-        FontId::new(px(13.0), theme::family_medium()),
+        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
         theme::lerp_color(theme::INK_FAINT, theme::INK_MUTED, shover),
     );
     kbd(
@@ -201,6 +203,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
     let acct = account_row(rect, s);
     let aid = ui.make_persistent_id("rail_avatar");
     let aresp = ui.interact(acct, aid, Sense::click());
+    super::accessible(&aresp, acct, egui::Role::Button, "Switch account", None, px(theme::RADIUS_FIELD));
     let ahover = anim::anim_bool(&ctx, aid, aresp.hovered(), 0.12, anim::ease_out_cubic);
     ui.painter().rect_filled(
         acct,
@@ -214,7 +217,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
         avatar_c,
         Align2::CENTER_CENTER,
         st.initials,
-        FontId::new(px(12.5), theme::family_bold()),
+        FontId::new(theme::text_px(12.5, s), theme::family_bold()),
         theme::INK,
     );
     let text_x = acct.left() + px(53.0);
@@ -223,7 +226,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
         Pos2::new(text_x, acct.center().y - px(7.5)),
         Align2::LEFT_CENTER,
         if signed_in { st.account } else { "No account" },
-        FontId::new(px(13.5), theme::family_bold()),
+        FontId::new(theme::text_px(13.5, s), theme::family_bold()),
         if signed_in {
             theme::INK
         } else {
@@ -241,7 +244,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
         Pos2::new(text_x + px(11.0), dot.y),
         Align2::LEFT_CENTER,
         status,
-        FontId::new(px(11.5), theme::family_medium()),
+        FontId::new(theme::text_px(11.5, s), theme::family_medium()),
         status_color,
     );
     if aresp.clicked() {
@@ -266,11 +269,9 @@ fn shortcut_label(key: egui::Key) -> String {
     format!("Ctrl {}", key.symbol_or_name())
 }
 
-pub const CARET_RIGHT: char = '\u{e13a}';
-
 pub fn kbd(ui: &egui::Ui, right: Pos2, text: &str, s: f32) -> Rect {
     let px = |v: f32| theme::px(v, s);
-    let font = FontId::new(px(10.5), FontFamily::Monospace);
+    let font = FontId::new(theme::text_px(10.5, s), FontFamily::Monospace);
     let w = ui
         .painter()
         .layout_no_wrap(text.to_owned(), font.clone(), theme::INK_FAINT)

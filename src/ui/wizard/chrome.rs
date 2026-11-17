@@ -18,21 +18,21 @@ pub(super) fn chrome(ui: &mut egui::Ui, d: Rect, view: &View, intent: &mut Inten
         Pos2::new(x, d.top() + px(48.0)),
         Align2::LEFT_TOP,
         steps::title(view.step),
-        FontId::new(px(19.0), theme::family_semibold()),
+        FontId::new(theme::text_px(19.0, s), theme::family_semibold()),
         theme::INK,
     );
     painter.text(
         Pos2::new(d.right() - px(56.0), d.top() + px(28.0)),
         Align2::RIGHT_CENTER,
         format!("STEP {} / {}", view.step + 1, STEPS),
-        FontId::new(px(11.0), theme::family_label()),
+        FontId::new(theme::text_px(11.0, s), theme::family_label()),
         theme::INK_MUTED,
     );
     let close = Rect::from_min_size(
         Pos2::new(d.right() - px(44.0), d.top() + px(14.0)),
         Vec2::splat(px(28.0)),
     );
-    if kit::icon_button(ui, close, theme::icon::X, s).clicked() {
+    if kit::icon_button(ui, close, theme::icon::X, "Close setup wizard", s).clicked() {
         intent.close = true;
     }
     let seg = Rect::from_min_size(
@@ -115,7 +115,7 @@ pub(super) fn para(
     color: Color32,
     s: f32,
 ) -> f32 {
-    let font = FontId::new(theme::px(13.0, s), theme::family_medium());
+    let font = FontId::new(theme::text_px(13.0, s), theme::family_medium());
     let galley = ui.painter().layout(text.to_owned(), font, color, width);
     let h = galley.size().y;
     ui.painter().galley(pos, galley, color);

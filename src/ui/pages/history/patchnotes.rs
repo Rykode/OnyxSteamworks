@@ -225,7 +225,7 @@ fn editor(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 TextEdit::multiline(&mut app.patchnotes_ui.draft)
                     .frame(Frame::NONE)
                     .hint_text("Generate a draft or write notes here...")
-                    .font(FontId::new(px(12.5), theme::family_medium()))
+                    .font(FontId::new(theme::text_px(12.5, s), theme::family_medium()))
                     .text_color(theme::INK)
                     .desired_width(f32::INFINITY)
                     .desired_rows(14),
@@ -263,7 +263,7 @@ fn preview(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             if text.trim().is_empty() {
                 ui.label(
                     egui::RichText::new("Nothing to preview yet.")
-                        .font(FontId::new(px(12.0), theme::family_medium()))
+                        .font(FontId::new(theme::text_px(12.0, s), theme::family_medium()))
                         .color(theme::INK_MUTED),
                 );
             } else {

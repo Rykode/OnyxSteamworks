@@ -22,7 +22,7 @@ pub(super) fn show(
             rect.center(),
             egui::Align2::CENTER_CENTER,
             "No builds match these filters.",
-            FontId::new(px(13.0), theme::family_medium()),
+            FontId::new(theme::text_px(13.0, s), theme::family_medium()),
             theme::INK_MUTED,
         );
         return None;
@@ -43,7 +43,7 @@ pub(super) fn show(
                 header.col(|ui| {
                     ui.label(
                         RichText::new(title)
-                            .font(FontId::new(px(11.0), theme::family_label()))
+                            .font(FontId::new(theme::text_px(11.0, s), theme::family_label()))
                             .color(theme::INK_MUTED),
                     );
                 });
@@ -77,7 +77,22 @@ pub(super) fn show(
                     );
                     cell(&mut row, &fmt_duration(rec.duration_ms), theme::INK_DIM, s);
                     cell(&mut row, &rec.description, theme::INK_DIM, s);
-                    if row.response().clicked() {
+                    let resp = row.response();
+                    crate::ui::kit::accessible(
+                        &resp,
+                        resp.rect,
+                        egui::Role::Button,
+                        &format!(
+                            "{} build on {}, {}, {}",
+                            status_label(rec.status),
+                            rec.branch,
+                            name,
+                            rel_time(rec.timestamp)
+                        ),
+                        None,
+                        0.0,
+                    );
+                    if resp.clicked() {
                         clicked = Some(i);
                     }
                 }
@@ -90,7 +105,7 @@ fn cell(row: &mut egui_extras::TableRow, text: &str, color: egui::Color32, s: f3
     row.col(|ui| {
         ui.label(
             RichText::new(text)
-                .font(FontId::new(theme::px(12.5, s), theme::family_medium()))
+                .font(FontId::new(theme::text_px(12.5, s), theme::family_medium()))
                 .color(color),
         );
     });

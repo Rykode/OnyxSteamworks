@@ -66,7 +66,7 @@ pub fn modal_with(
             let dim = theme::with_alpha(Color32::BLACK, (170.0 * t.clamp(0.0, 1.0)) as u8);
             ui.painter().rect_filled(screen, theme::corner(0.0), dim);
             let clicked = ui
-                .interact(screen, id.with("dim"), Sense::click())
+                .interact(screen, id.with("dim"), Sense::CLICK)
                 .clicked();
             let pointer = ui.input(|i| i.pointer.interact_pos());
             if should_dismiss(dismissible, clicked, prect, pointer) {
@@ -128,11 +128,15 @@ struct Toast {
     level: ToastLevel,
     text: String,
     born: f64,
+    /// Optional inline action (label, id). Clicking it reports the id via `take_actions`.
+    action: Option<(String, u64)>,
 }
 
 #[derive(Default)]
 pub struct Toasts {
     items: Vec<Toast>,
+    next_action: u64,
+    clicked: Vec<u64>,
 }
 
 impl Toasts {
@@ -150,7 +154,45 @@ impl Toasts {
             level,
             text,
             born: -1.0,
+            action: None,
         });
+        self.trim();
+    }
+
+    /// A toast with a button (e.g. "Undo"). Returns the id `take_actions` reports on click.
+    /// Action toasts live longer than plain ones so the button can be reached.
+    pub fn push_action(
+        &mut self,
+        level: ToastLevel,
+        text: impl Into<String>,
+        label: impl Into<String>,
+    ) -> u64 {
+        self.next_action += 1;
+        let id = self.next_action;
+        self.items.push(Toast {
+            level,
+            text: text.into(),
+            born: -1.0,
+            action: Some((label.into(), id)),
+        });
+        self.trim();
+        id
+    }
+
+    /// Ids of action buttons clicked since the last call.
+    pub fn take_actions(&mut self) -> Vec<u64> {
+        std::mem::take(&mut self.clicked)
+    }
+
+    /// Ids of action toasts still on screen; anything else has expired.
+    pub fn live_actions(&self) -> Vec<u64> {
+        self.items
+            .iter()
+            .filter_map(|t| t.action.as_ref().map(|(_, id)| *id))
+            .collect()
+    }
+
+    fn trim(&mut self) {
         if self.items.len() > MAX_TOASTS {
             let drop = self.items.len() - MAX_TOASTS;
             self.items.drain(..drop);
@@ -159,7 +201,7 @@ impl Toasts {
 
     pub fn show(&mut self, ui: &mut egui::Ui, anchor: Pos2, s: f32) -> egui::Response {
         let px = |v: f32| theme::px(v, s);
-        let ttl = 3.5f64;
+        let ttl_of = |t: &Toast| if t.action.is_some() { 8.0f64 } else { 3.5f64 };
         let now = ui.input(|i| i.time);
         for t in &mut self.items {
             if t.born < 0.0 {
@@ -167,7 +209,7 @@ impl Toasts {
             }
         }
         self.items
-            .retain(|t| t.level == ToastLevel::Error || now - t.born < ttl);
+            .retain(|t| t.level == ToastLevel::Error || now - t.born < ttl_of(t));
         let ctx = ui.ctx().clone();
         let animating = self
             .items
@@ -180,6 +222,7 @@ impl Toasts {
         let gap = px(10.0);
         let radius = px(theme::RADIUS_POPUP);
         let mut dismiss: Option<usize> = None;
+        let mut acted: Option<(usize, u64)> = None;
         let items = &self.items;
         let area = egui::Area::new(ui.make_persistent_id("toasts"))
             .order(Order::Foreground)
@@ -188,11 +231,13 @@ impl Toasts {
                 let mut y = anchor.y;
                 for (i, t) in items.iter().enumerate() {
                     let sticky = t.level == ToastLevel::Error;
+                    let ttl = ttl_of(t);
+                    let action_w = t.action.as_ref().map_or(0.0, |_| px(72.0));
                     let galley = ui.painter().layout(
                         t.text.clone(),
-                        FontId::new(px(13.0), theme::family_medium()),
+                        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
                         theme::INK,
-                        w - px(52.0),
+                        w - px(52.0) - action_w,
                     );
                     let h = (galley.size().y + px(24.0)).max(px(46.0));
                     let age = (now - t.born) as f32;
@@ -200,6 +245,14 @@ impl Toasts {
                     let x = anchor.x - w + (1.0 - slide) * px(40.0);
                     let r = Rect::from_min_size(Pos2::new(x, y), Vec2::new(w, h));
                     let resp = ui.interact(r, ui.make_persistent_id(("toast", i)), Sense::click());
+                    super::accessible(&resp, r, egui::Role::Button, &format!("Dismiss: {}", t.text), None, radius);
+                    ui.ctx().accesskit_node_builder(resp.id, |node| {
+                        node.set_live(if sticky {
+                            egui::accesskit::Live::Assertive
+                        } else {
+                            egui::accesskit::Live::Polite
+                        })
+                    });
                     if resp.clicked() {
                         dismiss = Some(i);
                     }
@@ -226,6 +279,18 @@ impl Toasts {
                         galley,
                         theme::INK,
                     );
+                    if let Some((label, id)) = &t.action {
+                        let b = Rect::from_min_size(
+                            Pos2::new(r.right() - px(12.0) - px(64.0), r.center().y - px(14.0)),
+                            Vec2::new(px(64.0), px(28.0)),
+                        );
+                        if super::Button::new(label, super::ButtonKind::Secondary)
+                            .show(ui, b, s)
+                            .clicked()
+                        {
+                            acted = Some((i, *id));
+                        }
+                    }
                     if !sticky {
                         let remaining = 1.0 - (age / ttl as f32).clamp(0.0, 1.0);
                         let lw = (w - px(28.0)) * remaining;
@@ -241,7 +306,10 @@ impl Toasts {
                     y += h + gap;
                 }
             });
-        if let Some(i) = dismiss {
+        if let Some((i, id)) = acted {
+            self.clicked.push(id);
+            self.items.remove(i);
+        } else if let Some(i) = dismiss {
             self.items.remove(i);
         }
         area.response

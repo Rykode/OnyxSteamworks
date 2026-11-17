@@ -60,7 +60,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &e
                     inner.center(),
                     Align2::CENTER_CENTER,
                     "No depots to preview",
-                    FontId::new(px(13.0), theme::family_medium()),
+                    FontId::new(theme::text_px(13.0, s), theme::family_medium()),
                     theme::INK_MUTED,
                 );
             }

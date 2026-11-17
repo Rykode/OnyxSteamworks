@@ -51,7 +51,8 @@ pub fn titlebar(ui: &mut egui::Ui, rect: Rect, s: f32) {
     let drag = ui.interact(
         rect,
         ui.make_persistent_id("titlebar_drag"),
-        Sense::click_and_drag(),
+        // Mouse-only: CLICK|DRAG without FOCUSABLE keeps it out of the Tab order.
+        Sense::CLICK | Sense::DRAG,
     );
     if drag.double_clicked() {
         ctx.send_viewport_cmd(ViewportCommand::Maximized(!maximized));
@@ -94,6 +95,7 @@ pub fn titlebar(ui: &mut egui::Ui, rect: Rect, s: f32) {
             Control::Maximize => "Maximize",
             Control::Close => "Close",
         };
+        crate::ui::kit::accessible(&resp, r, egui::Role::Button, tip, None, 0.0);
         if resp.on_hover_text(tip).clicked() {
             match control {
                 Control::Minimize => ctx.send_viewport_cmd(ViewportCommand::Minimized(true)),
@@ -221,7 +223,7 @@ pub fn resize_edges(ui: &mut egui::Ui, window: Rect, s: f32) {
         let resp = ui.interact(
             zone,
             ui.make_persistent_id(("resize_edge", i)),
-            Sense::drag(),
+            Sense::DRAG,
         );
         if resp.hovered() || resp.dragged() {
             ctx.set_cursor_icon(cursor);

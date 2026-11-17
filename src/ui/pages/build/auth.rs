@@ -45,7 +45,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 s,
             );
 
-            let note_font = FontId::new(px(11.5), theme::family_medium());
+            let note_font = FontId::new(theme::text_px(11.5, s), theme::family_medium());
             let galley = ui.painter().layout(
                 secrets::BUILD_ACCOUNT_NOTE.to_string(),
                 note_font,

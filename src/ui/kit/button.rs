@@ -143,7 +143,7 @@ impl<'a> Button<'a> {
         if self.loading {
             crate::ui::kit::spinner(painter, rect.center(), px(8.0), fg, &ctx);
         } else {
-            let fid = FontId::new(px(13.0), theme::family_medium());
+            let fid = FontId::new(theme::text_px(13.0, s), theme::family_medium());
             let label_w = painter
                 .layout_no_wrap(self.label.to_string(), fid.clone(), color)
                 .size()
@@ -190,11 +190,11 @@ impl<'a> Button<'a> {
     }
 }
 
-pub fn icon_button(ui: &mut egui::Ui, rect: Rect, glyph: char, s: f32) -> Response {
+pub fn icon_button(ui: &mut egui::Ui, rect: Rect, glyph: char, label: &str, s: f32) -> Response {
     let px = |v: f32| theme::px(v, s);
     let id = ui.make_persistent_id(("iconbtn", glyph, rect.left() as i32, rect.top() as i32));
     let resp = ui.interact(rect, id, Sense::click());
-    resp.widget_info(|| egui::WidgetInfo::new(egui::Role::Button));
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, label));
     let ctx = ui.ctx().clone();
     let hover = anim::anim_bool(
         &ctx,

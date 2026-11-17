@@ -96,7 +96,7 @@ fn reset_modal(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 Pos2::new(x, d.top() + px(58.0)),
                 Align2::LEFT_TOP,
                 "This restores all settings to defaults. Your projects are kept.",
-                FontId::new(px(12.5), theme::family_medium()),
+                FontId::new(theme::text_px(12.5, s), theme::family_medium()),
                 theme::INK_DIM,
             );
             let bw = px(150.0);

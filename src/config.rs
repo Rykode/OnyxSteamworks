@@ -62,6 +62,26 @@ pub struct Settings {
     #[serde(alias = "steamcmd_override")]
     pub steamcmd_path: String,
     pub wizard_done: bool,
+    /// Play a short system sound when a build or pipeline run ends.
+    pub sound_on_finish: bool,
+    /// Only play that sound while the Onyx window is not focused.
+    pub sound_only_unfocused: bool,
+    /// Closing the window hides Onyx to the notification area instead of quitting.
+    pub close_to_tray: bool,
+    /// Ask GitHub for a newer release on startup. Off unless the user opts in.
+    pub check_updates: bool,
+    pub theme: ThemeMode,
+    /// Page and sub-tab the app was on when it last closed.
+    pub last_page: u8,
+    pub last_sub_tabs: [u8; 5],
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ThemeMode {
+    #[default]
+    Dark,
+    Light,
+    System,
 }
 
 fn project_dirs() -> Result<(PathBuf, PathBuf)> {

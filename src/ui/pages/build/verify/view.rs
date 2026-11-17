@@ -44,7 +44,7 @@ pub(super) fn body(ui: &mut egui::Ui, phase: &Phase, done: usize, total: usize, 
 fn status(ui: &egui::Ui, area: Rect, text: &str, color: Color32, s: f32) {
     let galley = ui.painter().layout(
         text.to_string(),
-        FontId::new(theme::px(13.0, s), theme::family_medium()),
+        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
         color,
         area.width(),
     );
@@ -71,7 +71,7 @@ fn report_body(ui: &mut egui::Ui, area: Rect, report: &VerifyReport, s: f32) {
         area.left_top(),
         Align2::LEFT_TOP,
         text,
-        FontId::new(px(13.5), theme::family_semibold()),
+        FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
         color,
     );
     let list = Rect::from_min_max(Pos2::new(area.left(), area.top() + px(28.0)), area.max);
@@ -104,7 +104,7 @@ fn report_body(ui: &mut egui::Ui, area: Rect, report: &VerifyReport, s: f32) {
                         Pos2::new(r.left() + px(16.0), r.center().y),
                         Align2::LEFT_CENTER,
                         item,
-                        FontId::new(px(12.0), theme::family_medium()),
+                        FontId::new(theme::text_px(12.0, s), theme::family_medium()),
                         theme::INK_DIM,
                     );
                 }

@@ -24,7 +24,7 @@ pub fn show(ui: &mut egui::Ui, rect: Rect, report: &AdvisorReport, s: f32) {
             Pos2::new(body.left(), body.top() + px(6.0)),
             Align2::LEFT_TOP,
             "Nothing to flag. Build sizes look healthy.",
-            FontId::new(px(12.5), theme::family_medium()),
+            FontId::new(theme::text_px(12.5, s), theme::family_medium()),
             theme::INK_MUTED,
         );
         return;
@@ -108,7 +108,7 @@ fn advice_row(ui: &mut egui::Ui, text: &str, s: f32) {
     let px = |v: f32| theme::px(v, s);
     let galley = ui.painter().layout(
         text.to_string(),
-        FontId::new(px(12.5), theme::family_medium()),
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
         theme::INK_DIM,
         ui.available_width() - px(28.0),
     );
@@ -125,7 +125,7 @@ fn advice_row(ui: &mut egui::Ui, text: &str, s: f32) {
         Pos2::new(r.left() + px(14.0), r.center().y),
         Align2::LEFT_CENTER,
         "!",
-        FontId::new(px(14.0), theme::family_semibold()),
+        FontId::new(theme::text_px(14.0, s), theme::family_semibold()),
         theme::WARNING,
     );
     ui.painter().galley(
@@ -171,14 +171,14 @@ fn finding(ui: &mut egui::Ui, path: &str, meta: &str, dot: egui::Color32, s: f32
         Pos2::new(r.left() + px(28.0), r.center().y - px(7.0)),
         Align2::LEFT_CENTER,
         shown,
-        FontId::new(px(12.5), theme::family_medium()),
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
         theme::INK,
     );
     ui.painter().text(
         Pos2::new(r.left() + px(28.0), r.center().y + px(8.0)),
         Align2::LEFT_CENTER,
         meta,
-        FontId::new(px(11.0), theme::family_medium()),
+        FontId::new(theme::text_px(11.0, s), theme::family_medium()),
         theme::INK_MUTED,
     );
     ui.add_space(px(8.0));

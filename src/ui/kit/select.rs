@@ -17,6 +17,7 @@ pub fn dropdown(
     ui.skip_ahead_auto_ids(1);
     let resp = ui.interact(rect, id, Sense::click());
     let current = options.get(*selected).copied().unwrap_or("");
+    let selected_idx = *selected;
     resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::ComboBox, true, current));
     let ctx = ui.ctx().clone();
     let mut open = ctx.data(|d| d.get_temp::<bool>(id.with("open")).unwrap_or(false));
@@ -78,7 +79,7 @@ pub fn dropdown(
             if open {
                 theme::with_alpha(theme::ACCENT, 200)
             } else {
-                theme::LINE
+                theme::FIELD_EDGE
             },
         ),
         StrokeKind::Inside,
@@ -95,7 +96,7 @@ pub fn dropdown(
         Pos2::new(rect.left() + px(14.0), rect.center().y),
         Align2::LEFT_CENTER,
         current,
-        FontId::new(px(13.0), theme::family_medium()),
+        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
         theme::INK,
     );
     painter.text(
@@ -143,6 +144,7 @@ pub fn dropdown(
                                 Vec2::new(inner.width(), row_h),
                                 Sense::click(),
                             );
+                            super::accessible(&r, rr, egui::Role::ListBoxOption, opt, Some(i == selected_idx), px(theme::RADIUS_FIELD));
                             let hot = r.hovered() || i == cursor;
                             let hov = anim::anim_bool(
                                 ui.ctx(),
@@ -173,7 +175,7 @@ pub fn dropdown(
                                 Pos2::new(rr.left() + px(10.0), rr.center().y),
                                 Align2::LEFT_CENTER,
                                 *opt,
-                                FontId::new(px(13.0), theme::family_medium()),
+                                FontId::new(theme::text_px(13.0, s), theme::family_medium()),
                                 if on { theme::INK } else { theme::INK_DIM },
                             );
                             if r.clicked() {
@@ -194,74 +196,3 @@ pub fn dropdown(
     resp
 }
 
-pub fn tabs(
-    ui: &mut egui::Ui,
-    rect: Rect,
-    labels: &[&str],
-    active: &mut usize,
-    s: f32,
-) -> egui::Response {
-    let px = |v: f32| theme::px(v, s);
-    let n = labels.len().max(1);
-    let seg_w = rect.width() / n as f32;
-    let id = ui.make_persistent_id(("tabs", rect.left() as i32, rect.top() as i32));
-    let resp = ui.interact(rect, id, Sense::hover());
-
-    ui.painter().rect_filled(
-        rect,
-        theme::corner(px(theme::RADIUS_FIELD) + px(1.0)),
-        theme::BG,
-    );
-    ui.painter().rect_stroke(
-        rect,
-        theme::corner(px(theme::RADIUS_FIELD) + px(1.0)),
-        Stroke::new(1.0, theme::LINE_SOFT),
-        StrokeKind::Inside,
-    );
-
-    let target = rect.left() + seg_w * (*active as f32);
-    let x = ui
-        .ctx()
-        .animate_value_with_time(id.with("ind"), target, 0.18);
-    let ind = Rect::from_min_size(
-        Pos2::new(x + px(3.0), rect.top() + px(3.0)),
-        Vec2::new(seg_w - px(6.0), rect.height() - px(6.0)),
-    );
-    ui.painter().rect_filled(
-        ind,
-        theme::corner(px(theme::RADIUS_FIELD) - px(1.0)),
-        theme::FIELD_HI,
-    );
-    ui.painter().rect_stroke(
-        ind,
-        theme::corner(px(theme::RADIUS_FIELD) - px(1.0)),
-        Stroke::new(1.0, theme::LINE),
-        StrokeKind::Inside,
-    );
-
-    for (i, lbl) in labels.iter().enumerate() {
-        let seg = Rect::from_min_size(
-            Pos2::new(rect.left() + seg_w * i as f32, rect.top()),
-            Vec2::new(seg_w, rect.height()),
-        );
-        let r = ui.interact(seg, id.with(i), Sense::click());
-        if r.clicked() {
-            *active = i;
-        }
-        let on = i == *active;
-        ui.painter().text(
-            seg.center(),
-            Align2::CENTER_CENTER,
-            *lbl,
-            FontId::new(px(12.5), theme::family_medium()),
-            if on {
-                theme::INK
-            } else if r.hovered() {
-                theme::INK_DIM
-            } else {
-                theme::INK_MUTED
-            },
-        );
-    }
-    resp
-}

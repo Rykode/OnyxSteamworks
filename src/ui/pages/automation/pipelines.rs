@@ -194,7 +194,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &e
         Pos2::new(rect.left(), row2 + px(48.0)),
         Align2::LEFT_CENTER,
         VARIABLES,
-        FontId::new(px(11.5), theme::family_medium()),
+        FontId::new(theme::text_px(11.5, s), theme::family_medium()),
         theme::INK_FAINT,
     );
 
@@ -219,7 +219,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &e
             } else {
                 message
             },
-            FontId::new(px(12.5), theme::family_medium()),
+            FontId::new(theme::text_px(12.5, s), theme::family_medium()),
             theme::INK,
         );
         if Button::new("Approve", ButtonKind::Primary)
@@ -291,7 +291,7 @@ fn run_log(app: &App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Pos2::new(rect.left() + px(14.0), rect.top() + px(16.0)),
         Align2::LEFT_TOP,
         title,
-        FontId::new(px(12.0), theme::family_label()),
+        FontId::new(theme::text_px(12.0, s), theme::family_label()),
         theme::INK_MUTED,
     );
     let inner = Rect::from_min_max(
@@ -308,7 +308,7 @@ fn run_log(app: &App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             if app.pipeline_ui.logs.is_empty() {
                 ui.label(
                     egui::RichText::new("No run output yet.")
-                        .font(FontId::new(px(12.0), theme::family_medium()))
+                        .font(FontId::new(theme::text_px(12.0, s), theme::family_medium()))
                         .color(theme::INK_MUTED),
                 );
             }

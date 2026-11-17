@@ -50,6 +50,7 @@ pub(super) fn row(
     let resp = ui
         .interact(r, ui.make_persistent_id(("branch_row", i)), Sense::click())
         .on_hover_cursor(egui::CursorIcon::PointingHand);
+    crate::ui::kit::accessible(&resp, r, egui::Role::Button, &format!("Edit branch {}", b.name), None, px(theme::RADIUS_FIELD));
     let fill = if resp.hovered() {
         theme::FIELD_HI
     } else {
@@ -71,7 +72,7 @@ pub(super) fn row(
         Pos2::new(r.left() + px(79.0), r.center().y),
         Align2::LEFT_CENTER,
         name,
-        FontId::new(px(14.0), theme::family_medium()),
+        FontId::new(theme::text_px(14.0, s), theme::family_medium()),
         theme::INK,
     );
     let live = app
@@ -92,7 +93,7 @@ pub(super) fn row(
         Pos2::new(r.right() - px(15.0), r.center().y),
         Align2::RIGHT_CENTER,
         note,
-        FontId::new(px(12.5), egui::FontFamily::Monospace),
+        FontId::new(theme::text_px(12.5, s), egui::FontFamily::Monospace),
         theme::INK_MUTED,
     );
     resp.clicked()
@@ -123,7 +124,7 @@ pub(super) fn modal(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 Pos2::new(x, d.top() + px(30.0)),
                 Align2::LEFT_CENTER,
                 "Edit branch",
-                FontId::new(px(15.0), theme::family_semibold()),
+                FontId::new(theme::text_px(15.0, s), theme::family_semibold()),
                 theme::INK,
             );
             kit::label(ui.painter(), Pos2::new(x, d.top() + px(58.0)), "Name", s);
@@ -154,7 +155,7 @@ pub(super) fn modal(app: &mut App, ui: &mut egui::Ui, s: f32) {
             let mut live = !name.is_empty()
                 && app.projects_ui.base.set_live_branch.eq_ignore_ascii_case(&name);
             let tog = Rect::from_min_size(Pos2::new(x, d.top() + px(204.0)), Vec2::new(px(44.0), px(24.0)));
-            if kit::toggle(ui, tog, &mut live, s).changed() {
+            if kit::toggle(ui, tog, &mut live, "Set this branch live after upload", s).changed() {
                 app.projects_ui.base.set_live_branch = if live { name.clone() } else { String::new() };
             }
             let (text, color) = if live && name.eq_ignore_ascii_case("default") {
@@ -166,7 +167,7 @@ pub(super) fn modal(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 Pos2::new(tog.right() + px(12.0), tog.center().y),
                 Align2::LEFT_CENTER,
                 text,
-                FontId::new(px(12.5), theme::family_medium()),
+                FontId::new(theme::text_px(12.5, s), theme::family_medium()),
                 color,
             );
 
@@ -189,7 +190,17 @@ pub(super) fn modal(app: &mut App, ui: &mut egui::Ui, s: f32) {
         },
     );
     if remove {
-        app.projects_ui.remove_branch(i);
+        let owner = app.projects_ui.selected.clone();
+        if let Some(branch) = app.projects_ui.remove_branch(i) {
+            let label = if branch.name.trim().is_empty() { "branch".to_string() } else { branch.name.clone() };
+            app.offer_undo(format!("Removed {label}"), move |app| {
+                if app.projects_ui.selected != owner {
+                    return Err("Can't undo: a different project is open".to_string());
+                }
+                app.projects_ui.insert_branch(i, branch);
+                Ok(())
+            });
+        }
     }
     if !open || remove {
         app.projects_ui.edit_branch = None;

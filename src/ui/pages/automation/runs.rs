@@ -131,6 +131,7 @@ fn run_list(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 let (row, resp) = ui
                     .allocate_exact_size(Vec2::new(ui.available_width(), px(58.0)), Sense::click());
                 let on = app.runs_ui.selected.as_ref() == Some(&run.id);
+                crate::ui::kit::accessible(&resp, row, egui::Role::Button, &format!("{} on {}", run.pipeline_name, run.project_name), Some(on), px(theme::RADIUS_CARD));
                 let hover = anim::anim_bool(
                     ui.ctx(),
                     ui.make_persistent_id(("run_row", &run.id)),
@@ -152,28 +153,28 @@ fn run_list(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     Pos2::new(row.left() + px(30.0), row.top() + px(20.0)),
                     Align2::LEFT_CENTER,
                     &run.pipeline_name,
-                    FontId::new(px(13.0), theme::family_semibold()),
+                    FontId::new(theme::text_px(13.0, s), theme::family_semibold()),
                     theme::INK,
                 );
                 ui.painter().text(
                     Pos2::new(row.left() + px(30.0), row.top() + px(40.0)),
                     Align2::LEFT_CENTER,
                     &run.project_name,
-                    FontId::new(px(12.0), theme::family_medium()),
+                    FontId::new(theme::text_px(12.0, s), theme::family_medium()),
                     theme::INK_MUTED,
                 );
                 ui.painter().text(
                     Pos2::new(row.right() - px(12.0), row.top() + px(20.0)),
                     Align2::RIGHT_CENTER,
                     rel_time(run.started_ms),
-                    FontId::new(px(12.0), theme::family_medium()),
+                    FontId::new(theme::text_px(12.0, s), theme::family_medium()),
                     theme::INK_MUTED,
                 );
                 ui.painter().text(
                     Pos2::new(row.right() - px(12.0), row.top() + px(40.0)),
                     Align2::RIGHT_CENTER,
                     fmt_duration(run.duration_ms),
-                    FontId::new(px(12.0), theme::family_medium()),
+                    FontId::new(theme::text_px(12.0, s), theme::family_medium()),
                     theme::INK_FAINT,
                 );
                 if resp.clicked() {
@@ -205,7 +206,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Pos2::new(x, y),
         Align2::LEFT_TOP,
         &run.pipeline_name,
-        FontId::new(px(16.0), theme::family_semibold()),
+        FontId::new(theme::text_px(16.0, s), theme::family_semibold()),
         theme::INK,
     );
     let summary = format!(
@@ -218,10 +219,10 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Pos2::new(x, y + px(26.0)),
         Align2::LEFT_TOP,
         summary,
-        FontId::new(px(12.0), theme::family_medium()),
+        FontId::new(theme::text_px(12.0, s), theme::family_medium()),
         theme::INK_MUTED,
     );
-    let badge_font = FontId::new(px(12.0), theme::family_semibold());
+    let badge_font = FontId::new(theme::text_px(12.0, s), theme::family_semibold());
     let label = outcome_label(run.outcome);
     let color = outcome_color(run.outcome);
     let w = ui
@@ -276,6 +277,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             Sense::click(),
         );
         let on = app.runs_ui.step == Some(i);
+        crate::ui::kit::accessible(&resp, row, egui::Role::Button, &step.name, Some(on), px(theme::RADIUS_FIELD));
         if on || resp.hovered() {
             ui.painter().rect_filled(
                 row,
@@ -293,7 +295,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             Pos2::new(row.left() + px(36.0), row.center().y),
             Align2::LEFT_CENTER,
             &step.name,
-            FontId::new(px(13.0), theme::family_medium()),
+            FontId::new(theme::text_px(13.0, s), theme::family_medium()),
             if step.outcome == StepOutcome::NotRun {
                 theme::INK_FAINT
             } else {
@@ -309,7 +311,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             Pos2::new(row.right() - px(12.0), row.center().y),
             Align2::RIGHT_CENTER,
             right,
-            FontId::new(px(12.0), theme::family_medium()),
+            FontId::new(theme::text_px(12.0, s), theme::family_medium()),
             theme::INK_MUTED,
         );
         if step.kind.label() != step.name {
@@ -317,7 +319,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 Pos2::new(row.right() - px(80.0), row.center().y),
                 Align2::RIGHT_CENTER,
                 step.kind.label(),
-                FontId::new(px(12.0), theme::family_medium()),
+                FontId::new(theme::text_px(12.0, s), theme::family_medium()),
                 theme::INK_FAINT,
             );
         }
@@ -349,7 +351,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Pos2::new(log_rect.left() + px(12.0), log_rect.top() + px(12.0)),
         Align2::LEFT_TOP,
         title,
-        FontId::new(px(12.0), theme::family_label()),
+        FontId::new(theme::text_px(12.0, s), theme::family_label()),
         theme::INK_MUTED,
     );
     let inner = Rect::from_min_max(
@@ -369,7 +371,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             if step.log.is_empty() {
                 ui.label(
                     egui::RichText::new("This step produced no output.")
-                        .font(FontId::new(px(12.0), theme::family_medium()))
+                        .font(FontId::new(theme::text_px(12.0, s), theme::family_medium()))
                         .color(theme::INK_MUTED),
                 );
             }

@@ -64,7 +64,6 @@ pub struct ProjectsState {
     pub confirm_delete: bool,
     pub pending_switch: Option<super::Switch>,
     pub inited: bool,
-    pub editor_tab: usize,
     pub vdf_file: usize,
     pub scans: Vec<ScanState>,
     pub io: super::io::ProjectIo,
@@ -94,7 +93,6 @@ impl ProjectsState {
             confirm_delete: false,
             pending_switch: None,
             inited: false,
-            editor_tab: 0,
             vdf_file: 0,
             scans: Vec::new(),
             io: super::io::ProjectIo::default(),
@@ -195,14 +193,26 @@ impl ProjectsState {
         self.revalidate();
     }
 
-    pub fn remove_depot(&mut self, i: usize) {
+    pub fn remove_depot(&mut self, i: usize) -> Option<Depot> {
         if i < self.base.depots.len() {
-            self.base.depots.remove(i);
+            let depot = self.base.depots.remove(i);
             if i < self.scans.len() {
                 self.scans.remove(i);
             }
             self.revalidate();
+            Some(depot)
+        } else {
+            None
         }
+    }
+
+    /// Put a removed depot back where it was (Undo).
+    pub fn insert_depot(&mut self, i: usize, depot: Depot) {
+        let i = i.min(self.base.depots.len());
+        self.base.depots.insert(i, depot);
+        self.scans.clear();
+        self.sync_scans();
+        self.revalidate();
     }
 
     pub fn move_depot(&mut self, i: usize, up: bool) {
@@ -224,11 +234,21 @@ impl ProjectsState {
         self.revalidate();
     }
 
-    pub fn remove_branch(&mut self, i: usize) {
+    pub fn remove_branch(&mut self, i: usize) -> Option<crate::model::Branch> {
         if i < self.base.branches.len() {
-            self.base.branches.remove(i);
+            let branch = self.base.branches.remove(i);
             self.revalidate();
+            Some(branch)
+        } else {
+            None
         }
+    }
+
+    /// Put a removed branch back where it was (Undo).
+    pub fn insert_branch(&mut self, i: usize, branch: crate::model::Branch) {
+        let i = i.min(self.base.branches.len());
+        self.base.branches.insert(i, branch);
+        self.revalidate();
     }
 
     pub fn scan_depot(&mut self, ctx: &egui::Context, i: usize) {

@@ -38,7 +38,7 @@ pub fn confirm(ui: &mut egui::Ui, id: egui::Id, spec: &Confirm, s: f32) -> Choic
     let mut choice = Choice::Pending;
     let detail_galley = ui.painter().layout(
         spec.detail.to_string(),
-        FontId::new(px(12.5), theme::family_medium()),
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
         theme::INK_MUTED,
         px(412.0),
     );
@@ -57,7 +57,7 @@ pub fn confirm(ui: &mut egui::Ui, id: egui::Id, spec: &Confirm, s: f32) -> Choic
             label(&painter, Pos2::new(x, d.top() + px(26.0)), spec.eyebrow, s);
             let q = painter.layout(
                 spec.question.to_string(),
-                FontId::new(px(16.0), theme::family_semibold()),
+                FontId::new(theme::text_px(16.0, s), theme::family_semibold()),
                 theme::INK,
                 d.width() - px(56.0),
             );

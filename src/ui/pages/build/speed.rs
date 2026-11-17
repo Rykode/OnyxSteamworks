@@ -50,10 +50,6 @@ impl SpeedTracker {
         &self.samples
     }
 
-    pub fn has_data(&self) -> bool {
-        self.samples.len() >= 2 && self.rate > 1e-5
-    }
-
     pub fn eta_secs(&self) -> Option<u64> {
         if self.rate <= 1e-5 {
             return None;

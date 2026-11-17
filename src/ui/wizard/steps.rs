@@ -77,7 +77,7 @@ fn install(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
             Pos2::new(x + px(26.0), y + px(8.0)),
             Align2::LEFT_CENTER,
             "Extracting SteamCMD…",
-            FontId::new(px(13.0), theme::family_medium()),
+            FontId::new(theme::text_px(13.0, s), theme::family_medium()),
             theme::INK_DIM,
         );
     } else if view.downloading {
@@ -97,7 +97,7 @@ fn install(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
             Pos2::new(x, bar.bottom() + px(10.0)),
             Align2::LEFT_TOP,
             note,
-            FontId::new(px(12.0), theme::family_medium()),
+            FontId::new(theme::text_px(12.0, s), theme::family_medium()),
             theme::INK_MUTED,
         );
     } else {
@@ -177,7 +177,7 @@ fn project(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
             Pos2::new(x + px(26.0), y + px(8.0)),
             Align2::LEFT_CENTER,
             "Scanning folder…",
-            FontId::new(px(13.0), theme::family_medium()),
+            FontId::new(theme::text_px(13.0, s), theme::family_medium()),
             theme::INK_DIM,
         );
         return;
@@ -213,14 +213,14 @@ fn project(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s: f
             Pos2::new(card.left() + px(16.0), ly),
             Align2::LEFT_TOP,
             *k,
-            FontId::new(px(11.0), theme::family_label()),
+            FontId::new(theme::text_px(11.0, s), theme::family_label()),
             theme::INK_MUTED,
         );
         ui.painter().text(
             Pos2::new(card.left() + px(110.0), ly),
             Align2::LEFT_TOP,
             v,
-            FontId::new(px(12.5), theme::family_medium()),
+            FontId::new(theme::text_px(12.5, s), theme::family_medium()),
             theme::INK_DIM,
         );
     }
@@ -268,7 +268,7 @@ fn authorize(ui: &mut egui::Ui, rect: Rect, view: &View, intent: &mut Intent, s:
         Pos2::new(field.left() + px(14.0), field.center().y),
         Align2::LEFT_CENTER,
         &view.account,
-        FontId::new(px(13.0), theme::family_medium()),
+        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
         theme::INK_DIM,
     );
     y = field.bottom() + px(22.0);
@@ -344,7 +344,7 @@ fn label(ui: &egui::Ui, pos: Pos2, text: &str, s: f32) {
         pos,
         Align2::LEFT_TOP,
         text,
-        FontId::new(theme::px(11.5, s), theme::family_label()),
+        FontId::new(theme::text_px(11.5, s), theme::family_label()),
         theme::INK_MUTED,
     );
 }
@@ -367,7 +367,7 @@ fn check_line(ui: &egui::Ui, pos: Pos2, done: bool, text: &str, s: f32) {
         Pos2::new(pos.x + px(24.0), pos.y + px(8.0)),
         Align2::LEFT_CENTER,
         text,
-        FontId::new(px(13.0), theme::family_medium()),
+        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
         if done {
             theme::INK_DIM
         } else {

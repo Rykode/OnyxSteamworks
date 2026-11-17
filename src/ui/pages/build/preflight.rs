@@ -142,7 +142,7 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
                 Pos2::new(x, d.top() + px(50.0)),
                 Align2::LEFT_TOP,
                 summary,
-                FontId::new(px(13.0), theme::family_medium()),
+                FontId::new(theme::text_px(13.0, s), theme::family_medium()),
                 theme::INK_DIM,
             );
 
@@ -226,7 +226,7 @@ fn rows(ui: &mut egui::Ui, results: &[Issue], s: f32) -> Option<Act> {
             controls += btn_w + gap;
         }
         let text_w = (avail - px(26.0) - controls).max(px(80.0));
-        let font = FontId::new(px(12.5), theme::family_medium());
+        let font = FontId::new(theme::text_px(12.5, s), theme::family_medium());
         let galley = ui
             .painter()
             .layout(issue.message.clone(), font, theme::INK, text_w);

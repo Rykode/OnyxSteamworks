@@ -191,7 +191,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, body: Rect, s: f32) {
         ring_c,
         Align2::CENTER_CENTER,
         format!("{done}/{total}"),
-        FontId::new(px(13.0), theme::family_semibold()),
+        FontId::new(theme::text_px(13.0, s), theme::family_semibold()),
         theme::INK,
     );
     let headline = if all_done {
@@ -207,7 +207,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, body: Rect, s: f32) {
         Pos2::new(body.left() + px(80.0), body.top() + px(26.0)),
         Align2::LEFT_CENTER,
         headline,
-        FontId::new(px(15.0), theme::family_semibold()),
+        FontId::new(theme::text_px(15.0, s), theme::family_semibold()),
         theme::INK,
     );
 
@@ -293,7 +293,7 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             Pos2::new(r.left() + px(50.0), r.top() + px(16.0)),
             Align2::LEFT_CENTER,
             &row.title,
-            FontId::new(px(13.5), theme::family_semibold()),
+            FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
             theme::INK,
         );
         let message = row
@@ -305,7 +305,7 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             Pos2::new(r.left() + px(50.0), r.bottom() - px(16.0)),
             Align2::LEFT_CENTER,
             message,
-            FontId::new(px(12.0), theme::family_medium()),
+            FontId::new(theme::text_px(12.0, s), theme::family_medium()),
             theme::INK_MUTED,
         );
         if let Some(result) = &row.result

@@ -171,7 +171,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
                         Pos2::new(list.left() + px(6.0), list.top() + px(8.0)),
                         Align2::LEFT_TOP,
                         "No matching commands.",
-                        FontId::new(px(12.5), theme::family_medium()),
+                        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
                         theme::INK_MUTED,
                     );
                 }
@@ -182,6 +182,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
                         egui::Sense::click(),
                     );
                     let on = row == pal.selected;
+                    crate::ui::kit::accessible(&sense, r, egui::Role::ListBoxOption, &a.title, Some(on), theme::px(theme::RADIUS_FIELD, s));
                     let hover = sense.hovered();
                     let fill = if on {
                         theme::FIELD_HI
@@ -195,7 +196,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
                         Pos2::new(r.left() + px(14.0), r.center().y),
                         Align2::LEFT_CENTER,
                         &a.title,
-                        FontId::new(px(13.0), theme::family_medium()),
+                        FontId::new(theme::text_px(13.0, s), theme::family_medium()),
                         theme::INK,
                     );
                     if let Some(sc) = &a.shortcut {
@@ -203,7 +204,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
                             Pos2::new(r.right() - px(14.0), r.center().y),
                             Align2::RIGHT_CENTER,
                             sc,
-                            FontId::new(px(11.5), theme::family_medium()),
+                            FontId::new(theme::text_px(11.5, s), theme::family_medium()),
                             theme::INK_MUTED,
                         );
                     }

@@ -43,7 +43,7 @@ enum DepotAct {
 
 pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &egui::Context) {
     let px = |v: f32| theme::px(v, s);
-    kit::card_title(ui.painter(), card, "Depots", s);
+    kit::card_title(ui, card, "Depots", s);
     let add = kit::link(
         ui,
         Pos2::new(card.right() - px(20.0), card.top() + px(26.0)),
@@ -114,7 +114,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                     Pos2::new(cx(0), y + px(ROW / 2.0)),
                     Align2::LEFT_CENTER,
                     "No depots yet. Add one above.",
-                    FontId::new(px(13.0), theme::family_medium()),
+                    FontId::new(theme::text_px(13.0, s), theme::family_medium()),
                     theme::INK_FAINT,
                 );
                 y += px(ROW);
@@ -125,6 +125,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                 let resp = ui
                     .interact(row, ui.make_persistent_id(("depot_row", i)), egui::Sense::click())
                     .on_hover_cursor(egui::CursorIcon::PointingHand);
+                crate::ui::kit::accessible(&resp, row, egui::Role::Button, &format!("Edit depot {}", app.projects_ui.base.depots[i].depot_id), None, px(theme::RADIUS_FIELD));
                 if resp.hovered() {
                     ui.painter().rect_filled(
                         row.shrink2(Vec2::new(0.0, px(3.0))),
@@ -137,7 +138,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                 }
                 let d = &app.projects_ui.base.depots[i];
                 let cy = row.center().y;
-                let mono = |size: f32| FontId::new(px(size), egui::FontFamily::Monospace);
+                let mono = |size: f32| FontId::new(theme::text_px(size, s), egui::FontFamily::Monospace);
                 let cell = |i: usize| {
                     Rect::from_min_max(
                         Pos2::new(cx(i), row.top()),
@@ -145,19 +146,24 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                     )
                 };
                 let id = if d.depot_id.is_empty() { "-" } else { d.depot_id.as_str() };
-                ui.painter().with_clip_rect(cell(0)).text(
+                let path_label = depot_path_label(&root, d);
+                let (_, cut_id) = kit::fit_text(
+                    ui.painter(),
                     Pos2::new(cx(0), cy),
                     Align2::LEFT_CENTER,
                     id,
                     mono(13.0),
                     theme::INK,
+                    cell(0).width(),
                 );
-                ui.painter().with_clip_rect(cell(1)).text(
+                let (_, cut_path) = kit::fit_text(
+                    ui.painter(),
                     Pos2::new(cx(1), cy),
                     Align2::LEFT_CENTER,
-                    depot_path_label(&root, d),
+                    &path_label,
                     mono(13.0),
                     theme::INK_DIM,
+                    cell(1).width(),
                 );
                 let target = classify_os(&d.name)
                     .or_else(|| classify_os(&d.local_path.to_string_lossy()))
@@ -171,13 +177,21 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                     .map(|e| if e.starts_with('.') { format!("*{e}") } else { e.clone() })
                     .collect::<Vec<_>>()
                     .join(", ");
-                ui.painter().with_clip_rect(cell(3)).text(
+                let ignore_label = if ignore.is_empty() { "-".to_string() } else { ignore };
+                let (_, cut_ignore) = kit::fit_text(
+                    ui.painter(),
                     Pos2::new(cx(3), cy),
                     Align2::LEFT_CENTER,
-                    if ignore.is_empty() { "-".to_string() } else { ignore },
+                    &ignore_label,
                     mono(12.0),
                     theme::INK_MUTED,
+                    cell(3).width(),
                 );
+                if cut_id || cut_path || cut_ignore {
+                    resp.clone().on_hover_text(format!(
+                        "Depot {id}\nPath: {path_label}\nIgnore: {ignore_label}"
+                    ));
+                }
                 y += px(ROW);
                 if i + 1 < n_depots {
                     sep(y);
@@ -214,7 +228,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                     Pos2::new(x0, by + px(21.0)),
                     Align2::LEFT_CENTER,
                     "No branches yet.",
-                    FontId::new(px(13.0), theme::family_medium()),
+                    FontId::new(theme::text_px(13.0, s), theme::family_medium()),
                     theme::INK_FAINT,
                 );
             }
@@ -274,7 +288,7 @@ pub(super) fn modals(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Conte
                     Pos2::new(d.left() + px(26.0), d.top() + px(30.0)),
                     Align2::LEFT_CENTER,
                     "Edit depot",
-                    FontId::new(px(15.0), theme::family_semibold()),
+                    FontId::new(theme::text_px(15.0, s), theme::family_semibold()),
                     theme::INK,
                 );
                 let body = Rect::from_min_max(
@@ -305,7 +319,21 @@ pub(super) fn modals(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Conte
                 app.projects_ui.edit_depot = Some(if up { i - 1 } else { i + 1 });
             }
             Some(DepotAct::Remove(i)) => {
-                app.projects_ui.remove_depot(i);
+                let owner = app.projects_ui.selected.clone();
+                if let Some(depot) = app.projects_ui.remove_depot(i) {
+                    let label = if depot.name.trim().is_empty() {
+                        format!("depot {}", depot.depot_id)
+                    } else {
+                        depot.name.clone()
+                    };
+                    app.offer_undo(format!("Removed {label}"), move |app| {
+                        if app.projects_ui.selected != owner {
+                            return Err("Can't undo: a different project is open".to_string());
+                        }
+                        app.projects_ui.insert_depot(i, depot);
+                        Ok(())
+                    });
+                }
                 app.projects_ui.edit_depot = None;
             }
             Some(DepotAct::Scan(i)) => app.projects_ui.scan_depot(ctx, i),
@@ -444,7 +472,7 @@ fn depot_card(
     let text_clip = pr.shrink2(Vec2::new(px(14.0), 0.0));
     let galley =
         ui.painter()
-            .layout_no_wrap(txt, FontId::new(px(12.0), theme::family_medium()), col);
+            .layout_no_wrap(txt, FontId::new(theme::text_px(12.0, s), theme::family_medium()), col);
     let overflow = galley.size().x > text_clip.width();
     let tx = if overflow {
         text_clip.right() - galley.size().x
@@ -512,7 +540,7 @@ fn depot_card(
             Pos2::new(x + w, y + px(OPT_H) / 2.0),
             Align2::RIGHT_CENTER,
             format!("{files} files  {}", human_size(bytes)),
-            FontId::new(px(12.0), theme::family_medium()),
+            FontId::new(theme::text_px(12.0, s), theme::family_medium()),
             theme::INK_MUTED,
         );
     }
@@ -522,7 +550,7 @@ fn depot_card(
         Pos2::new(x, y),
         Align2::LEFT_TOP,
         "Exclusions",
-        FontId::new(px(11.0), theme::family_label()),
+        FontId::new(theme::text_px(11.0, s), theme::family_label()),
         theme::INK_MUTED,
     );
     y += px(LABEL_H);

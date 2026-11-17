@@ -81,14 +81,14 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 Pos2::new(x, d.top() + px(48.0)),
                 Align2::LEFT_TOP,
                 "Quit Onyx anyway?",
-                FontId::new(px(16.0), theme::family_semibold()),
+                FontId::new(theme::text_px(16.0, s), theme::family_semibold()),
                 theme::INK,
             );
             painter.text(
                 Pos2::new(x, d.top() + px(80.0)),
                 Align2::LEFT_TOP,
                 summary.as_str(),
-                FontId::new(px(12.5), theme::family_medium()),
+                FontId::new(theme::text_px(12.5, s), theme::family_medium()),
                 theme::INK_MUTED,
             );
             let by = d.bottom() - px(26.0) - px(42.0);

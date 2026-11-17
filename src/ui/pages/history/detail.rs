@@ -81,7 +81,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
                     status_label(rec.status),
                     rel_time(rec.timestamp)
                 ),
-                FontId::new(px(12.5), theme::family_semibold()),
+                FontId::new(theme::text_px(12.5, s), theme::family_semibold()),
                 status_color(rec.status),
             );
 
@@ -101,14 +101,14 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
                     Pos2::new(settings.left() + px(14.0), y),
                     Align2::LEFT_TOP,
                     k,
-                    FontId::new(px(11.5), theme::family_label()),
+                    FontId::new(theme::text_px(11.5, s), theme::family_label()),
                     theme::INK_MUTED,
                 );
                 painter.text(
                     Pos2::new(settings.left() + px(140.0), y),
                     Align2::LEFT_TOP,
                     v,
-                    FontId::new(px(12.0), theme::family_medium()),
+                    FontId::new(theme::text_px(12.0, s), theme::family_medium()),
                     theme::INK_DIM,
                 );
             }
@@ -135,7 +135,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
                     if log.is_empty() {
                         ui.label(
                             egui::RichText::new("Log file is empty or missing.")
-                                .font(FontId::new(px(12.0), theme::family_medium()))
+                                .font(FontId::new(theme::text_px(12.0, s), theme::family_medium()))
                                 .color(theme::INK_MUTED),
                         );
                     }

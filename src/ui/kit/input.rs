@@ -7,6 +7,7 @@ use crate::ui::{anim, kit, theme};
 pub struct Input<'a> {
     text: &'a mut String,
     hint: &'a str,
+    label: Option<&'a str>,
     error: bool,
     helper: Option<&'a str>,
     mask: bool,
@@ -21,6 +22,7 @@ impl<'a> Input<'a> {
         Self {
             text,
             hint: "",
+            label: None,
             error: false,
             helper: None,
             mask: false,
@@ -33,6 +35,13 @@ impl<'a> Input<'a> {
 
     pub fn hint(mut self, hint: &'a str) -> Self {
         self.hint = hint;
+        self
+    }
+
+    /// Accessible name when the visible label is drawn outside the field.
+    /// Without it, screen readers use the hint text.
+    pub fn label(mut self, label: &'a str) -> Self {
+        self.label = Some(label);
         self
     }
 
@@ -116,9 +125,9 @@ impl<'a> Input<'a> {
             );
         }
         let font = if self.mono {
-            FontId::new(px(12.5), egui::FontFamily::Monospace)
+            FontId::new(theme::text_px(12.5, s), egui::FontFamily::Monospace)
         } else {
-            FontId::new(px(13.0), theme::family_medium())
+            FontId::new(theme::text_px(13.0, s), theme::family_medium())
         };
 
         let resp = if self.readonly {
@@ -165,14 +174,19 @@ impl<'a> Input<'a> {
             )
         };
 
+        let name = self.label.unwrap_or(self.hint);
+        if !name.is_empty() {
+            ui.ctx().accesskit_node_builder(resp.id, |node| node.set_label(name));
+        }
+
         let border = if self.error {
             theme::DANGER
         } else if resp.has_focus() {
             theme::ACCENT
         } else if resp.hovered() {
-            theme::FIELD_HI
+            theme::INK_FAINT
         } else {
-            theme::LINE
+            theme::FIELD_EDGE
         };
         let width = if self.error { 1.0 + flash * 0.75 } else { 1.0 };
         if resp.has_focus() && !self.error {
@@ -200,7 +214,7 @@ impl<'a> Input<'a> {
                 Pos2::new(field.left() + px(2.0), field.bottom() + px(5.0)),
                 Align2::LEFT_TOP,
                 helper,
-                FontId::new(px(11.5), theme::family_medium()),
+                FontId::new(theme::text_px(11.5, s), theme::family_medium()),
                 color,
             );
         }

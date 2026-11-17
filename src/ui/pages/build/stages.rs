@@ -13,7 +13,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
     let px = |v: f32| theme::px(v, s);
     let st = &app.build_ui;
     let filled = st.filled_stages().min(SHOWN);
-    kit::card_title(ui.painter(), card, "Stages", s);
+    kit::card_title(ui, card, "Stages", s);
     let current = if st.running {
         st.stage
             .and_then(|c| state::STAGES.iter().position(|(s, _)| *s == c))
@@ -60,7 +60,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
             Pos2::new(x0 + px(37.5), cy),
             Align2::LEFT_CENTER,
             *label,
-            FontId::new(px(15.0), theme::family_medium()),
+            FontId::new(theme::text_px(15.0, s), theme::family_medium()),
             text_color,
         );
         let time = st
@@ -78,13 +78,29 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
         } else {
             theme::with_alpha(theme::INK_FAINT, 150)
         };
+        let state_word = if is_failed {
+            "failed"
+        } else if is_current {
+            "in progress"
+        } else if done {
+            "done"
+        } else {
+            "not started"
+        };
+        let spoken = if time == "--:--" {
+            format!("{label}: {state_word}")
+        } else {
+            format!("{label}: {state_word}, {time}")
+        };
         painter.text(
             Pos2::new(x1, cy),
             Align2::RIGHT_CENTER,
             time,
-            FontId::new(px(13.0), egui::FontFamily::Monospace),
+            FontId::new(theme::text_px(13.0, s), egui::FontFamily::Monospace),
             time_color,
         );
+        let row = Rect::from_min_max(Pos2::new(x0, cy - px(20.0)), Pos2::new(x1, cy + px(20.0)));
+        kit::readable(ui, row, egui::Role::ListItem, &spoken, is_current);
     }
 }
 
@@ -108,7 +124,7 @@ fn human_bytes(b: f64) -> String {
 
 pub(super) fn speed_card(app: &App, ui: &mut egui::Ui, card: Rect, project: &Project, s: f32) {
     let px = |v: f32| theme::px(v, s);
-    kit::card_title(ui.painter(), card, "Upload speed", s);
+    kit::card_title(ui, card, "Upload speed", s);
     let st = &app.build_ui;
     let bytes = st
         .review
@@ -127,14 +143,14 @@ pub(super) fn speed_card(app: &App, ui: &mut egui::Ui, card: Rect, project: &Pro
         Pos2::new(x0, card.top() + px(67.5)),
         Align2::LEFT_CENTER,
         value,
-        FontId::new(px(37.0), theme::family_bold()),
+        FontId::new(theme::text_px(37.0, s), theme::family_bold()),
         theme::INK,
     );
     painter.text(
         Pos2::new(big.right() + px(5.0), big.bottom() - px(7.0)),
         Align2::LEFT_BOTTOM,
         unit,
-        FontId::new(px(14.0), theme::family_medium()),
+        FontId::new(theme::text_px(14.0, s), theme::family_medium()),
         theme::INK_MUTED,
     );
     let eta = st
@@ -146,7 +162,7 @@ pub(super) fn speed_card(app: &App, ui: &mut egui::Ui, card: Rect, project: &Pro
         Pos2::new(x1, card.top() + px(75.5)),
         Align2::RIGHT_CENTER,
         eta,
-        FontId::new(px(13.0), egui::FontFamily::Monospace),
+        FontId::new(theme::text_px(13.0, s), egui::FontFamily::Monospace),
         theme::INK_DIM,
     );
 
@@ -175,7 +191,7 @@ pub(super) fn speed_card(app: &App, ui: &mut egui::Ui, card: Rect, project: &Pro
             format!("{:02}:{:02}", e / 60, e % 60)
         }),
     };
-    let mono = FontId::new(px(12.5), egui::FontFamily::Monospace);
+    let mono = FontId::new(theme::text_px(12.5, s), egui::FontFamily::Monospace);
     painter.text(Pos2::new(x0, card.top() + px(213.0)), Align2::LEFT_CENTER, left, mono.clone(), theme::INK_DIM);
     painter.text(
         Pos2::new(x1, card.top() + px(213.0)),

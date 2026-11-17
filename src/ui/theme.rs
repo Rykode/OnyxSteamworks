@@ -12,6 +12,9 @@ pub const SURFACE_2: Color32 = Color32::from_rgb(0x29, 0x2B, 0x32);
 pub const FIELD: Color32 = Color32::from_rgb(0x27, 0x28, 0x2E);
 pub const FIELD_HI: Color32 = Color32::from_rgb(0x30, 0x32, 0x3A);
 pub const LINE: Color32 = Color32::from_rgb(0x3A, 0x3D, 0x46);
+// Resting outline of text boxes and dropdowns: >= 3:1 against SURFACE and SURFACE_2
+// (WCAG 1.4.11), because the field fill alone is nearly invisible on a card.
+pub const FIELD_EDGE: Color32 = Color32::from_rgb(0x6F, 0x76, 0x85);
 pub const LINE_SOFT: Color32 = Color32::from_rgb(0x2C, 0x2E, 0x36);
 pub const WELL: Color32 = Color32::from_rgb(0x12, 0x14, 0x16);
 
@@ -73,6 +76,15 @@ pub fn scale(available: egui::Vec2) -> f32 {
 
 pub fn px(value: f32, scale: f32) -> f32 {
     value * scale
+}
+
+/// Smallest rendered text size, in logical px. Layout keeps shrinking with small
+/// windows (down to SCALE_MIN), but text stops here so it stays readable.
+const MIN_TEXT_PX: f32 = 11.0;
+
+/// Text size for a design size at the current scale, floored at MIN_TEXT_PX.
+pub fn text_px(size: f32, scale: f32) -> f32 {
+    (size * scale).max(MIN_TEXT_PX)
 }
 
 pub fn corner(radius_px: f32) -> CornerRadius {

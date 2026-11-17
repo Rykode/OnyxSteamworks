@@ -63,7 +63,19 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &e
         }
         Some(Action::Up(i)) => app.pipeline_ui.move_step(i, true),
         Some(Action::Down(i)) => app.pipeline_ui.move_step(i, false),
-        Some(Action::Delete(i)) => app.pipeline_ui.remove_step(i),
+        Some(Action::Delete(i)) => {
+            let owner = app.pipeline_ui.draft.id.clone();
+            let pipe = app.pipeline_ui.current().map(|p| p.id.clone());
+            if let (Some(step), Some(pipe)) = (app.pipeline_ui.remove_step(i), pipe) {
+                let label = if step.name.trim().is_empty() { "step".to_string() } else { step.name.clone() };
+                app.offer_undo(format!("Removed {label}"), move |app| {
+                    if app.pipeline_ui.draft.id != owner || !app.pipeline_ui.insert_step(&pipe, i, step) {
+                        return Err("Can't undo: that pipeline is no longer open".to_string());
+                    }
+                    Ok(())
+                });
+            }
+        }
         Some(Action::RunFrom(i)) => app.pipeline_ui.start(ctx, i),
         None => {}
     }
@@ -119,7 +131,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
         Pos2::new(tx, rect.top() + if same { px(27.0) } else { px(18.0) }),
         Align2::LEFT_CENTER,
         &name,
-        FontId::new(px(13.5), theme::family_semibold()),
+        FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
         theme::INK,
     );
     if !same {
@@ -127,7 +139,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
             Pos2::new(tx, rect.top() + px(36.0)),
             Align2::LEFT_CENTER,
             &detail,
-            FontId::new(px(11.5), theme::family_medium()),
+            FontId::new(theme::text_px(11.5, s), theme::family_medium()),
             theme::INK_MUTED,
         );
     }
@@ -143,6 +155,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
         ui,
         Rect::from_min_size(Pos2::new(rx, by), Vec2::new(bw, px(34.0))),
         theme::icon::TRASH,
+        "Delete step",
         s,
     )
     .clicked()
@@ -154,6 +167,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
         ui,
         Rect::from_min_size(Pos2::new(rx, by), Vec2::new(bw, px(34.0))),
         theme::icon::CARET_DOWN,
+        "Show step settings",
         s,
     )
     .clicked()
@@ -189,6 +203,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
         ui,
         Rect::from_min_size(Pos2::new(rx, by), Vec2::new(bw, px(34.0))),
         theme::icon::PLAY,
+        "Run from this step",
         s,
     )
     .clicked()
@@ -203,6 +218,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
         ui,
         Rect::from_min_size(Pos2::new(rx, by + px(5.0)), Vec2::new(px(42.0), px(22.0))),
         &mut enabled,
+        "Step enabled",
         s,
     )
     .clicked()

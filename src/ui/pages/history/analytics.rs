@@ -115,7 +115,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 Pos2::new(c.x, c.y + px(30.0)),
                 Align2::CENTER_CENTER,
                 "Analyzing builds...",
-                FontId::new(px(12.5), theme::family_medium()),
+                FontId::new(theme::text_px(12.5, s), theme::family_medium()),
                 theme::INK_MUTED,
             );
         }
@@ -263,7 +263,7 @@ fn banner(ui: &mut egui::Ui, rect: Rect, growth: f32, s: f32) {
         Pos2::new(rect.left() + px(30.0), rect.center().y),
         Align2::LEFT_CENTER,
         msg,
-        FontId::new(px(12.5), theme::family_semibold()),
+        FontId::new(theme::text_px(12.5, s), theme::family_semibold()),
         theme::INK,
     );
 }
@@ -294,7 +294,7 @@ fn chart_panel(
         Pos2::new(rect.right() - px(16.0), rect.top() + px(20.0)),
         Align2::RIGHT_CENTER,
         latest,
-        FontId::new(px(14.0), theme::family_semibold()),
+        FontId::new(theme::text_px(14.0, s), theme::family_semibold()),
         theme::INK,
     );
     let plot = Rect::from_min_max(
@@ -306,7 +306,7 @@ fn chart_panel(
             plot.center(),
             Align2::CENTER_CENTER,
             "Need 2+ builds",
-            FontId::new(px(11.5), theme::family_medium()),
+            FontId::new(theme::text_px(11.5, s), theme::family_medium()),
             theme::INK_MUTED,
         );
         return;
@@ -356,14 +356,14 @@ fn success_panel(ui: &mut egui::Ui, rect: Rect, data: &Analytics, s: f32) {
         center,
         Align2::CENTER_CENTER,
         format!("{:.0}%", data.success_rate * 100.0),
-        FontId::new(px(18.0), theme::family_semibold()),
+        FontId::new(theme::text_px(18.0, s), theme::family_semibold()),
         theme::INK,
     );
     ui.painter().text(
         Pos2::new(center.x, rect.bottom() - px(16.0)),
         Align2::CENTER_CENTER,
         format!("{} builds", data.total_builds),
-        FontId::new(px(11.5), theme::family_medium()),
+        FontId::new(theme::text_px(11.5, s), theme::family_medium()),
         theme::INK_MUTED,
     );
 }
@@ -376,7 +376,7 @@ fn last_builds(ui: &mut egui::Ui, rect: Rect, points: &[BuildPoint], s: f32) {
             Pos2::new(rect.left(), rect.top() + px(10.0)),
             Align2::LEFT_TOP,
             "No builds with manifests yet.",
-            FontId::new(px(12.5), theme::family_medium()),
+            FontId::new(theme::text_px(12.5, s), theme::family_medium()),
             theme::INK_MUTED,
         );
         return;
@@ -408,14 +408,14 @@ fn last_builds(ui: &mut egui::Ui, rect: Rect, points: &[BuildPoint], s: f32) {
             Pos2::new(cr.left() + px(12.0), cr.center().y + px(2.0)),
             Align2::LEFT_CENTER,
             human_size(p.size),
-            FontId::new(px(12.5), theme::family_semibold()),
+            FontId::new(theme::text_px(12.5, s), theme::family_semibold()),
             theme::INK,
         );
         ui.painter().text(
             Pos2::new(cr.left() + px(12.0), cr.bottom() - px(12.0)),
             Align2::LEFT_CENTER,
             super::fmt_duration(p.duration_ms),
-            FontId::new(px(11.0), theme::family_medium()),
+            FontId::new(theme::text_px(11.0, s), theme::family_medium()),
             theme::INK_MUTED,
         );
     }

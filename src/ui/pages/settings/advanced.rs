@@ -136,7 +136,7 @@ fn stepper(
         Pos2::new(x, y + px(15.0)),
         Align2::LEFT_CENTER,
         label,
-        FontId::new(px(12.5), theme::family_medium()),
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
         theme::INK_DIM,
     );
     let bx = x + px(230.0);
@@ -149,7 +149,7 @@ fn stepper(
         Pos2::new((minus.right() + plus.left()) / 2.0, y + px(15.0)),
         Align2::CENTER_CENTER,
         value.to_string(),
-        FontId::new(px(13.5), theme::family_semibold()),
+        FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
         theme::INK,
     );
     let mut changed = false;

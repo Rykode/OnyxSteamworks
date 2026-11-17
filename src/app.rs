@@ -146,13 +146,14 @@ impl App {
             Pos2::new(h.left(), h.center().y),
             Align2::LEFT_CENTER,
             item.label,
-            FontId::new(px(28.0), theme::family_semibold()),
+            FontId::new(theme::text_px(28.0, s), theme::family_semibold()),
             theme::INK,
         );
+        kit::readable(ui, title, egui::Role::Heading, item.label, false);
         if item.sub_tabs.is_empty() {
             return;
         }
-        let font = FontId::new(px(13.5), theme::family_medium());
+        let font = FontId::new(theme::text_px(13.5, s), theme::family_medium());
         let pad = px(14.5);
         let inset = px(4.0);
         let widths: Vec<f32> = item
@@ -199,6 +200,7 @@ impl App {
                 egui::vec2(widths[i], pill.height()),
             );
             let resp = ui.interact(seg, id.with(i), egui::Sense::click());
+            kit::accessible(&resp, seg, egui::Role::Tab, label, Some(i == active), px(8.0));
             if resp.clicked() {
                 self.sub_tabs[idx] = i;
             }

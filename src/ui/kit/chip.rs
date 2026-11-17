@@ -4,7 +4,7 @@ use crate::ui::{anim, theme};
 
 pub fn chip_size(ui: &egui::Ui, label: &str, s: f32) -> Vec2 {
     let px = |v: f32| theme::px(v, s);
-    let font = FontId::new(px(12.0), theme::family_medium());
+    let font = FontId::new(theme::text_px(12.0, s), theme::family_medium());
     let w = ui
         .painter()
         .layout_no_wrap(label.to_string(), font, theme::INK)
@@ -14,7 +14,6 @@ pub fn chip_size(ui: &egui::Ui, label: &str, s: f32) -> Vec2 {
 }
 
 pub fn chip(ui: &mut egui::Ui, rect: Rect, label: &str, selected: bool, s: f32) -> Response {
-    let px = |v: f32| theme::px(v, s);
     let id = ui.make_persistent_id(("chip", label, rect.left() as i32, rect.top() as i32));
     let resp = ui.interact(rect, id, Sense::click());
     resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, selected, label));
@@ -46,7 +45,7 @@ pub fn chip(ui: &mut egui::Ui, rect: Rect, label: &str, selected: bool, s: f32) 
         rect.center(),
         Align2::CENTER_CENTER,
         label,
-        FontId::new(px(12.0), theme::family_medium()),
+        FontId::new(theme::text_px(12.0, s), theme::family_medium()),
         text,
     );
     if resp.has_focus() {

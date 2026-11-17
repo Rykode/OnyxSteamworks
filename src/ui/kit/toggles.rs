@@ -57,7 +57,7 @@ pub fn checkbox(
             Pos2::new(box_rect.right() + px(10.0), rect.center().y),
             Align2::LEFT_CENTER,
             label,
-            FontId::new(px(13.0), theme::family_medium()),
+            FontId::new(theme::text_px(13.0, s), theme::family_medium()),
             theme::INK_DIM,
         );
     }
@@ -88,7 +88,7 @@ fn draw_check(painter: &egui::Painter, rect: Rect, t: f32, color: egui::Color32,
     }
 }
 
-pub fn toggle(ui: &mut egui::Ui, rect: Rect, on: &mut bool, s: f32) -> Response {
+pub fn toggle(ui: &mut egui::Ui, rect: Rect, on: &mut bool, label: &str, s: f32) -> Response {
     let px = |v: f32| theme::px(v, s);
     let id = ui.make_persistent_id(("toggle", rect.left() as i32, rect.top() as i32));
     let mut resp = ui.interact(rect, id, Sense::click());
@@ -97,7 +97,7 @@ pub fn toggle(ui: &mut egui::Ui, rect: Rect, on: &mut bool, s: f32) -> Response 
         resp.mark_changed();
     }
     let state = *on;
-    resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Switch, true, state, ""));
+    resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Switch, true, state, label));
     let ctx = ui.ctx().clone();
     let t = anim::anim_bool(&ctx, id.with("on"), *on, 0.18, anim::ease_out_cubic);
     let track = theme::lerp_color(theme::FIELD_HI, theme::ACCENT, t.clamp(0.0, 1.0));

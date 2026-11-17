@@ -28,7 +28,7 @@ fn lbl(ui: &egui::Ui, x: f32, y: f32, text: &str, s: f32) {
         Pos2::new(x, y),
         Align2::LEFT_TOP,
         text,
-        FontId::new(theme::px(11.0, s), theme::family_label()),
+        FontId::new(theme::text_px(11.0, s), theme::family_label()),
         theme::INK_MUTED,
     );
 }
@@ -60,6 +60,7 @@ pub(super) fn fields(
         ui,
         Rect::from_min_size(Pos2::new(x, y), Vec2::new(px(42.0), px(22.0))),
         &mut step.enabled,
+        "Enabled",
         s,
     );
     text(ui, x + px(50.0), y + px(11.0), "Enabled", s);
@@ -67,6 +68,7 @@ pub(super) fn fields(
         ui,
         Rect::from_min_size(Pos2::new(x + px(150.0), y), Vec2::new(px(42.0), px(22.0))),
         &mut step.continue_on_failure,
+        "Continue on failure",
         s,
     );
     text(ui, x + px(200.0), y + px(11.0), "Continue on failure", s);
@@ -259,7 +261,7 @@ fn build_game_fields(
     let inner = preview.shrink(px(10.0));
     let galley = ui
         .painter()
-        .layout(body, FontId::monospace(px(11.5)), color, inner.width());
+        .layout(body, FontId::monospace(theme::text_px(11.5, s)), color, inner.width());
     ui.painter()
         .with_clip_rect(inner)
         .galley(inner.min, galley, color);
@@ -379,7 +381,7 @@ fn text(ui: &egui::Ui, x: f32, y: f32, content: &str, s: f32) {
         Pos2::new(x, y),
         Align2::LEFT_TOP,
         content,
-        FontId::new(theme::px(12.0, s), theme::family_medium()),
+        FontId::new(theme::text_px(12.0, s), theme::family_medium()),
         theme::INK_MUTED,
     );
 }

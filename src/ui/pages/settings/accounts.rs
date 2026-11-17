@@ -36,7 +36,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Pos2::new(rect.left(), rect.top() + px(24.0)),
         Align2::LEFT_TOP,
         "Add a build account and authorize it once. SteamCMD caches the login, so later builds skip the Steam Guard prompt.",
-        FontId::new(px(12.0), theme::family_medium()),
+        FontId::new(theme::text_px(12.0, s), theme::family_medium()),
         theme::INK_MUTED,
     );
 
@@ -142,7 +142,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                         Pos2::new(r.left() + px(28.0), r.center().y - px(8.0)),
                         Align2::LEFT_CENTER,
                         title,
-                        FontId::new(px(13.5), theme::family_semibold()),
+                        FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
                         theme::INK,
                     );
                     let status = if authed {
@@ -154,7 +154,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                         Pos2::new(r.left() + px(28.0), r.center().y + px(9.0)),
                         Align2::LEFT_CENTER,
                         status,
-                        FontId::new(px(11.0), theme::family_medium()),
+                        FontId::new(theme::text_px(11.0, s), theme::family_medium()),
                         theme::INK_MUTED,
                     );
 
@@ -163,7 +163,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                         Pos2::new(r.right() - px(10.0) - bw, r.center().y - bw / 2.0),
                         Vec2::splat(bw),
                     );
-                    if kit::icon_button(ui, dz, theme::icon::TRASH, s).clicked() {
+                    if kit::icon_button(ui, dz, theme::icon::TRASH, &format!("Remove account {name}"), s).clicked() {
                         remove = Some(name.clone());
                     }
                     if !authed {
@@ -205,7 +205,7 @@ fn remember_toggle(ui: &mut egui::Ui, rect: Rect, cfg: &mut crate::config::Setti
     let y = rect.bottom() - px(36.0);
     let tog = Rect::from_min_size(Pos2::new(rect.left(), y), Vec2::new(px(44.0), px(24.0)));
     let mut remember = cfg.remember_password;
-    if kit::toggle(ui, tog, &mut remember, s).changed() {
+    if kit::toggle(ui, tog, &mut remember, "Remember passwords in the OS keyring", s).changed() {
         cfg.remember_password = remember;
         save(cfg);
     }
@@ -213,7 +213,7 @@ fn remember_toggle(ui: &mut egui::Ui, rect: Rect, cfg: &mut crate::config::Setti
         Pos2::new(tog.right() + px(12.0), tog.center().y),
         Align2::LEFT_CENTER,
         "Remember passwords in the OS keyring (optional; off by default)",
-        FontId::new(px(12.0), theme::family_medium()),
+        FontId::new(theme::text_px(12.0, s), theme::family_medium()),
         theme::INK_DIM,
     );
 }

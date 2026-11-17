@@ -92,7 +92,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 Pos2::new(hint.left(), hint.top() + px(2.0)),
                 Align2::LEFT_TOP,
                 "Every project builds with this SteamCMD. The setup wizard can download it for you.",
-                FontId::new(px(11.5), theme::family_medium()),
+                FontId::new(theme::text_px(11.5, s), theme::family_medium()),
                 theme::INK_MUTED,
             );
 
@@ -118,7 +118,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 Pos2::new(hint.left(), hint.top() + px(2.0)),
                 Align2::LEFT_TOP,
                 "Projects use these folders unless you override them in the project editor.",
-                FontId::new(px(11.5), theme::family_medium()),
+                FontId::new(theme::text_px(11.5, s), theme::family_medium()),
                 theme::INK_MUTED,
             );
 
@@ -132,6 +132,16 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             if toggle_row(ui, "Reduce motion", &mut c.reduce_motion, s) {
                 anim::set_reduce_motion(c.reduce_motion);
                 dirty = true;
+            }
+            if anim::os_reduces_motion() && !c.reduce_motion {
+                let note = alloc(ui, 24.0, s);
+                ui.painter().text(
+                    Pos2::new(note.left(), note.top() + px(2.0)),
+                    Align2::LEFT_TOP,
+                    "Windows has animations turned off, so Onyx reduces motion anyway.",
+                    FontId::new(theme::text_px(11.5, s), theme::family_medium()),
+                    theme::INK_MUTED,
+                );
             }
 
             section(ui, "Logs & backups", s);
@@ -244,7 +254,7 @@ fn path_row(
         Pos2::new(r.left(), r.top()),
         Align2::LEFT_TOP,
         label,
-        FontId::new(px(11.5), theme::family_label()),
+        FontId::new(theme::text_px(11.5, s), theme::family_label()),
         theme::INK_MUTED,
     );
     let mut shown = value.to_string();
@@ -292,7 +302,7 @@ fn toggle_row(ui: &mut egui::Ui, label: &str, value: &mut bool, s: f32) -> bool 
     let r = alloc(ui, 34.0, s);
     let tog = Rect::from_min_size(Pos2::new(r.left(), r.top()), Vec2::new(px(44.0), px(24.0)));
     let mut on = *value;
-    let changed = kit::toggle(ui, tog, &mut on, s).changed();
+    let changed = kit::toggle(ui, tog, &mut on, label, s).changed();
     if changed {
         *value = on;
     }
@@ -300,7 +310,7 @@ fn toggle_row(ui: &mut egui::Ui, label: &str, value: &mut bool, s: f32) -> bool 
         Pos2::new(tog.right() + px(12.0), tog.center().y),
         Align2::LEFT_CENTER,
         label,
-        FontId::new(px(12.5), theme::family_medium()),
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
         theme::INK_DIM,
     );
     changed
@@ -321,7 +331,7 @@ fn stepper(
         Pos2::new(r.left(), r.top() + px(16.0)),
         Align2::LEFT_CENTER,
         label,
-        FontId::new(px(12.5), theme::family_medium()),
+        FontId::new(theme::text_px(12.5, s), theme::family_medium()),
         theme::INK_DIM,
     );
     let minus = Rect::from_min_size(
@@ -336,7 +346,7 @@ fn stepper(
         Pos2::new((minus.right() + plus.left()) / 2.0, r.top() + px(15.0)),
         Align2::CENTER_CENTER,
         value.to_string(),
-        FontId::new(px(13.5), theme::family_semibold()),
+        FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
         theme::INK,
     );
     let mut changed = false;

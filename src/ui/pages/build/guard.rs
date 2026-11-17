@@ -116,7 +116,7 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
             );
             let galley = ui.painter().layout(
                 note,
-                FontId::new(px(12.5), theme::family_medium()),
+                FontId::new(theme::text_px(12.5, s), theme::family_medium()),
                 theme::DANGER,
                 d.width() - px(52.0),
             );
@@ -141,7 +141,7 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
                         Pos2::new(x + px(16.0), y),
                         Align2::LEFT_TOP,
                         item,
-                        FontId::new(px(12.0), theme::family_medium()),
+                        FontId::new(theme::text_px(12.0, s), theme::family_medium()),
                         theme::INK_DIM,
                     );
                 }

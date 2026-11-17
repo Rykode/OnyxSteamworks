@@ -174,13 +174,13 @@ fn header(app: &mut App, ui: &mut egui::Ui, layout: &Layout, project: &Project, 
         .painter()
         .layout_no_wrap(
             "Build".to_owned(),
-            FontId::new(px(28.0), theme::family_semibold()),
+            FontId::new(theme::text_px(28.0, s), theme::family_semibold()),
             theme::INK,
         )
         .size()
         .x;
     let name = if project.name.is_empty() { "Untitled" } else { project.name.as_str() };
-    let name_font = FontId::new(px(13.5), theme::family_semibold());
+    let name_font = FontId::new(theme::text_px(13.5, s), theme::family_semibold());
     let name_w = ui
         .painter()
         .layout_no_wrap(name.to_owned(), name_font.clone(), theme::INK)
@@ -193,6 +193,7 @@ fn header(app: &mut App, ui: &mut egui::Ui, layout: &Layout, project: &Project, 
     let resp = ui
         .interact(pill, ui.make_persistent_id("build_project_pill"), egui::Sense::click())
         .on_hover_cursor(egui::CursorIcon::PointingHand);
+    crate::ui::kit::accessible(&resp, pill, egui::Role::ComboBox, &format!("Project: {}", project.name), None, px(theme::RADIUS_FIELD));
     kit::bordered(
         ui.painter(),
         pill,
@@ -258,6 +259,7 @@ fn header(app: &mut App, ui: &mut egui::Ui, layout: &Layout, project: &Project, 
         let bresp = ui
             .interact(badge, ui.make_persistent_id("build_branch_badge"), egui::Sense::click())
             .on_hover_cursor(egui::CursorIcon::PointingHand);
+        crate::ui::kit::accessible(&bresp, badge, egui::Role::ComboBox, &format!("Branch: {}", selected_branch(app, project)), None, badge.height() / 2.0);
         egui::Popup::menu(&bresp).show(|ui| {
             for (i, b) in project.branches.iter().enumerate() {
                 let name = if b.name.is_empty() { "branch" } else { b.name.as_str() };
@@ -400,11 +402,17 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
         }
     };
     let links_to_log = last_unhappy.is_some();
+    let spoken = format!("{title}. {sub}");
     if let Some(rec) = last_unhappy {
         let resp = ui.interact(card, ui.make_persistent_id("build_last_result"), egui::Sense::click());
-        resp.widget_info(|| {
-            egui::WidgetInfo::labeled(egui::Role::Button, true, "Open the last build in History")
-        });
+        crate::ui::kit::accessible(
+            &resp,
+            card,
+            egui::Role::Button,
+            &format!("{spoken}. Open its log in History"),
+            None,
+            px(kit::RADIUS_CARD_PX),
+        );
         // Same hover treatment as the project list rows.
         let hover = ui.ctx().animate_bool_with_time(
             ui.make_persistent_id("build_last_result_hover"),
@@ -420,9 +428,6 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
                 theme::corner(px(kit::RADIUS_CARD_PX)),
                 theme::with_alpha(theme::SURFACE_2, (hover * 200.0) as u8),
             );
-        }
-        if resp.has_focus() {
-            theme::focus_ring(ui.painter(), card, px(kit::RADIUS_CARD_PX), theme::FOCUS);
         }
         if resp.clicked() {
             app.history_ui.open_detail(rec);
@@ -441,21 +446,33 @@ fn status_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, 
     );
     let tx = tile.right() + px(16.5);
     let clip = Rect::from_min_max(Pos2::new(tx, card.top()), Pos2::new(card.right() - px(14.0), card.bottom()));
-    painter.with_clip_rect(clip).text(
+    kit::fit_text(
+        painter,
         Pos2::new(tx, card.center().y - px(10.5)),
         Align2::LEFT_CENTER,
-        title,
-        FontId::new(px(17.0), theme::family_semibold()),
+        &title,
+        FontId::new(theme::text_px(17.0, s), theme::family_semibold()),
         theme::INK,
+        clip.width(),
     );
-    let sub_font = FontId::new(px(13.0), theme::family_medium());
-    let sub_rect = painter.with_clip_rect(clip).text(
+    let sub_font = FontId::new(theme::text_px(13.0, s), theme::family_medium());
+    let link_w = if links_to_log {
+        painter.layout_no_wrap("View log".to_owned(), sub_font.clone(), theme::INK).size().x + px(8.0)
+    } else {
+        0.0
+    };
+    let (sub_rect, _) = kit::fit_text(
+        painter,
         Pos2::new(tx, card.center().y + px(12.0)),
         Align2::LEFT_CENTER,
-        sub,
+        &sub,
         sub_font.clone(),
         theme::INK_MUTED,
+        clip.width() - link_w,
     );
+    if !links_to_log {
+        kit::readable(ui, card, egui::Role::Status, &spoken, true);
+    }
     if links_to_log {
         // Link colour matches the other in-card links (e.g. the checklist template link).
         painter.with_clip_rect(clip).text(
@@ -519,6 +536,7 @@ fn stat_tiles(app: &App, ui: &mut egui::Ui, row: Rect, project: &Project, s: f32
             Vec2::new(w, row.height()),
         );
         kit::card(ui.painter(), r, s);
+        kit::readable(ui, r, egui::Role::Label, &format!("{label}: {value}"), false);
         kit::caps(
             ui.painter(),
             Pos2::new(r.left() + px(15.0), r.top() + px(24.0)),
@@ -529,19 +547,25 @@ fn stat_tiles(app: &App, ui: &mut egui::Ui, row: Rect, project: &Project, s: f32
             s,
         );
         let font = if *mono {
-            FontId::new(px(15.0), egui::FontFamily::Monospace)
+            FontId::new(theme::text_px(15.0, s), egui::FontFamily::Monospace)
         } else {
-            FontId::new(px(16.5), theme::family_semibold())
+            FontId::new(theme::text_px(16.5, s), theme::family_semibold())
         };
-        ui.painter()
-            .with_clip_rect(r.shrink(px(4.0)))
-            .text(Pos2::new(r.left() + px(15.0), r.top() + px(47.0)), Align2::LEFT_CENTER, value, font, *color);
+        kit::fit_text(
+            ui.painter(),
+            Pos2::new(r.left() + px(15.0), r.top() + px(47.0)),
+            Align2::LEFT_CENTER,
+            value,
+            font,
+            *color,
+            r.width() - px(30.0),
+        );
     }
 }
 
 fn options_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project, s: f32, ctx: &egui::Context) {
     let px = |v: f32| theme::px(v, s);
-    kit::card_title(ui.painter(), card, "Run options", s);
+    kit::card_title(ui, card, "Run options", s);
     let area = Rect::from_min_max(
         Pos2::new(card.left() + px(20.0), card.top() + px(44.0)),
         Pos2::new(card.right() - px(14.0), card.bottom() - px(10.0)),
@@ -565,12 +589,12 @@ fn options_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project,
                 .show(ui, Rect::from_min_size(Pos2::new(x, y), Vec2::new(w, px(36.0))), s);
             y += px(50.0);
             let tog = Rect::from_min_size(Pos2::new(x, y), Vec2::new(px(40.0), px(22.0)));
-            kit::toggle(ui, tog, &mut app.build_ui.preview_only, s);
+            kit::toggle(ui, tog, &mut app.build_ui.preview_only, "Preview only", s);
             ui.painter().text(
                 Pos2::new(tog.right() + px(10.0), tog.center().y),
                 Align2::LEFT_CENTER,
                 "Preview only",
-                FontId::new(px(13.0), theme::family_medium()),
+                FontId::new(theme::text_px(13.0, s), theme::family_medium()),
                 theme::INK_DIM,
             );
             y += px(34.0);
@@ -586,7 +610,7 @@ fn options_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project,
                     Pos2::new(x + px(14.0), auth.center().y),
                     Align2::LEFT_CENTER,
                     if has_user { "No cached Steam login" } else { "No Steam account set" },
-                    FontId::new(px(12.5), theme::family_medium()),
+                    FontId::new(theme::text_px(12.5, s), theme::family_medium()),
                     theme::INK_DIM,
                 );
                 let bw = px(118.0);
@@ -626,14 +650,14 @@ fn options_card_h(app: &App, project: &Project, s: f32) -> f32 {
 fn set_live_row(app: &mut App, ui: &mut egui::Ui, at: Pos2, w: f32, project: &Project, s: f32) {
     let px = |v: f32| theme::px(v, s);
     let branch = selected_branch(app, project);
-    let font = FontId::new(px(13.0), theme::family_medium());
+    let font = FontId::new(theme::text_px(13.0, s), theme::family_medium());
     let row = Rect::from_min_size(at, Vec2::new(w, px(22.0)));
     if branch.trim().is_empty() || branch.eq_ignore_ascii_case("default") {
         ui.painter().text(
             Pos2::new(at.x, row.center().y),
             Align2::LEFT_CENTER,
             "Uploads only. Set the default branch live in Steamworks.",
-            FontId::new(px(12.5), theme::family_medium()),
+            FontId::new(theme::text_px(12.5, s), theme::family_medium()),
             theme::INK_MUTED,
         );
         return;
@@ -645,9 +669,8 @@ fn set_live_row(app: &mut App, ui: &mut egui::Ui, at: Pos2, w: f32, project: &Pr
         format!("Set live on {branch}")
     };
     let tog = Rect::from_min_size(at, Vec2::new(px(40.0), px(22.0)));
-    let resp = kit::toggle(ui, tog, &mut app.build_ui.set_live, s);
+    kit::toggle(ui, tog, &mut app.build_ui.set_live, &label, s);
     let on = app.build_ui.set_live;
-    resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Switch, true, on, &label));
     let tx = tog.right() + px(10.0);
     let clip = Rect::from_min_max(Pos2::new(tx, row.top()), Pos2::new(row.right(), row.bottom()));
     let painter = ui.painter().with_clip_rect(clip);

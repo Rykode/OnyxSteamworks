@@ -60,7 +60,7 @@ fn approvals_banner(app: &mut App, ui: &mut egui::Ui, body: Rect, s: f32) -> Rec
                 "{} for {} is waiting for approval",
                 a.pipeline_name, a.project_name
             ),
-            FontId::new(px(13.0), theme::family_semibold()),
+            FontId::new(theme::text_px(13.0, s), theme::family_semibold()),
             theme::INK,
         );
         let detail = if a.message.is_empty() {
@@ -72,7 +72,7 @@ fn approvals_banner(app: &mut App, ui: &mut egui::Ui, body: Rect, s: f32) -> Rec
             Pos2::new(row.left() + px(16.0), row.top() + px(36.0)),
             Align2::LEFT_CENTER,
             detail,
-            FontId::new(px(12.0), theme::family_medium()),
+            FontId::new(theme::text_px(12.0, s), theme::family_medium()),
             theme::INK_MUTED,
         );
         let approve = Rect::from_min_size(

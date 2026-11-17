@@ -68,7 +68,7 @@ pub fn show(state: &mut BuildState, ui: &mut egui::Ui, card: Rect, s: f32, ctx: 
     let id = ui.make_persistent_id("build_console");
     let jump = ctx.data_mut(|d| d.get_temp::<bool>(id.with("jump")).unwrap_or(false));
     let row_h = px(23.6);
-    let font = FontId::new(px(13.0), egui::FontFamily::Monospace);
+    let font = FontId::new(theme::text_px(13.0, s), egui::FontFamily::Monospace);
     let text_x = px(74.0);
 
     let mut cui = ui.new_child(egui::UiBuilder::new().max_rect(log_rect));
@@ -87,8 +87,9 @@ pub fn show(state: &mut BuildState, ui: &mut egui::Ui, card: Rect, s: f32, ctx: 
     sa.show_rows(&mut cui, row_h, rows.len().max(1), |ui, range| {
         last_visible = range.end;
         if rows.is_empty() {
-            let (r, _) =
+            let (r, resp) =
                 ui.allocate_exact_size(Vec2::new(ui.available_width(), row_h), Sense::hover());
+            resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, true, "No output yet."));
             ui.painter().text(
                 r.left_center(),
                 Align2::LEFT_CENTER,
@@ -99,9 +100,11 @@ pub fn show(state: &mut BuildState, ui: &mut egui::Ui, card: Rect, s: f32, ctx: 
             return;
         }
         for i in range {
-            let (r, _) =
+            let (r, resp) =
                 ui.allocate_exact_size(Vec2::new(ui.available_width(), row_h), Sense::hover());
             if let Some((time, text, error)) = rows.get(i) {
+                let spoken = if *error { format!("{time} error: {text}") } else { format!("{time} {text}") };
+                resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, true, &spoken));
                 ui.painter().text(
                     r.left_center(),
                     Align2::LEFT_CENTER,
