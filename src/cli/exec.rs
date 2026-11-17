@@ -312,19 +312,7 @@ pub fn execute_build(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn fake_bin() -> PathBuf {
-        if let Some(p) = option_env!("CARGO_BIN_EXE_fake_steamcmd") {
-            return PathBuf::from(p);
-        }
-        let mut exe = std::env::current_exe().expect("current exe");
-        exe.pop();
-        if exe.file_name().is_some_and(|n| n == "deps") {
-            exe.pop();
-        }
-        exe.push(format!("fake_steamcmd{}", std::env::consts::EXE_SUFFIX));
-        exe
-    }
+    use crate::steamcmd::tests::fake_bin;
 
     fn valid_project(steamcmd: PathBuf) -> Project {
         Project {

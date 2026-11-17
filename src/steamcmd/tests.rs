@@ -7,17 +7,21 @@ use eframe::egui;
 use super::{BuildEvent, BuildResult, PromptKind, RunOptions, cancel, start_build, start_login};
 use crate::model::Project;
 
-fn fake_bin() -> PathBuf {
+/// The `fake_steamcmd` binary (`cargo build --bin fake_steamcmd`) sits in the target
+/// profile folder, e.g. `target/debug`. Unit test binaries live somewhere below it:
+/// `target/debug/deps` up to Rust 1.99, `target/debug/build/onyx/<hash>/out` from
+/// 1.100. So look in each folder above the test binary until it turns up.
+pub(crate) fn fake_bin() -> PathBuf {
     if let Some(p) = option_env!("CARGO_BIN_EXE_fake_steamcmd") {
         return PathBuf::from(p);
     }
-    let mut exe = std::env::current_exe().expect("current exe");
-    exe.pop();
-    if exe.file_name().is_some_and(|n| n == "deps") {
-        exe.pop();
-    }
-    exe.push(format!("fake_steamcmd{}", std::env::consts::EXE_SUFFIX));
-    exe
+    let name = format!("fake_steamcmd{}", std::env::consts::EXE_SUFFIX);
+    let exe = std::env::current_exe().expect("current exe");
+    exe.ancestors()
+        .skip(1)
+        .map(|dir| dir.join(&name))
+        .find(|p| p.is_file())
+        .unwrap_or_else(|| panic!("{name} not found above {}; run `cargo build --bin fake_steamcmd` first", exe.display()))
 }
 
 fn project() -> Project {

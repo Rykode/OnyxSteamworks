@@ -11,7 +11,7 @@ use crate::model::Project;
 
 mod reader;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 use reader::{Parsed, finish, spawn_reader};
 
