@@ -52,7 +52,7 @@ pub fn label(painter: &egui::Painter, pos: Pos2, text: &str, s: f32) {
         Align2::LEFT_TOP,
         text,
         FontId::new(theme::text_px(12.0, s), theme::family_label()),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
 }
 
@@ -62,7 +62,7 @@ pub fn heading(painter: &egui::Painter, pos: Pos2, text: &str, s: f32) {
         Align2::LEFT_TOP,
         text,
         FontId::new(theme::text_px(14.0, s), theme::family_semibold()),
-        theme::INK,
+        theme::ink(),
     );
 }
 
@@ -94,21 +94,21 @@ pub fn empty_state(ui: &mut egui::Ui, rect: Rect, glyph: char, title: &str, body
         Align2::CENTER_CENTER,
         glyph.to_string(),
         theme::icon_font(px(34.0), false),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     painter.text(
         Pos2::new(cx, cy),
         Align2::CENTER_CENTER,
         title,
         FontId::new(theme::text_px(15.0, s), theme::family_semibold()),
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
     painter.text(
         Pos2::new(cx, cy + px(22.0)),
         Align2::CENTER_CENTER,
         body,
         FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     let area = Rect::from_center_size(Pos2::new(cx, cy), Vec2::new(px(320.0), px(80.0)));
     readable(ui, area, egui::Role::Label, &format!("{title}. {body}"), false);
@@ -119,7 +119,7 @@ pub const RADIUS_CARD_PX: f32 = 17.0;
 pub fn card(painter: &egui::Painter, rect: Rect, s: f32) {
     let r = theme::px(RADIUS_CARD_PX, s);
     theme::shadow(painter, rect, r, 18, 60);
-    bordered(painter, rect, theme::SURFACE, theme::LINE_SOFT, r);
+    bordered(painter, rect, theme::surface(), theme::line_soft(), r);
 }
 
 pub fn spaced(text: &str, font: FontId, color: egui::Color32, spacing: f32) -> egui::text::LayoutJob {
@@ -157,7 +157,7 @@ pub fn card_title(ui: &egui::Ui, card: Rect, text: &str, s: f32) -> Rect {
         Align2::LEFT_CENTER,
         text,
         12.5,
-        theme::INK_MUTED,
+        theme::ink_muted(),
         s,
     );
     readable(ui, rect, egui::Role::Heading, text, false);
@@ -170,7 +170,7 @@ pub fn card_note(painter: &egui::Painter, card: Rect, text: &str, s: f32) -> Rec
         Align2::RIGHT_CENTER,
         text,
         FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-        theme::INK_FAINT,
+        theme::ink_faint(),
     )
 }
 
@@ -208,14 +208,14 @@ pub fn badge(
 pub fn tag(painter: &egui::Painter, pos: Pos2, align: Align2, text: &str, s: f32) -> Rect {
     let px = |v: f32| theme::px(v, s);
     let font = FontId::new(theme::text_px(12.0, s), theme::family_semibold());
-    let galley = painter.layout_no_wrap(text.to_owned(), font, theme::INK_DIM);
+    let galley = painter.layout_no_wrap(text.to_owned(), font, theme::ink_dim());
     let size = Vec2::new(galley.size().x + px(18.0), px(23.0));
     let rect = align.anchor_size(pos, size);
-    painter.rect_filled(rect, theme::corner(px(8.0)), theme::FIELD_HI);
+    painter.rect_filled(rect, theme::corner(px(8.0)), theme::field_hi());
     painter.galley(
         rect.center() - galley.size() / 2.0,
         galley,
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
     rect
 }
@@ -267,7 +267,7 @@ pub fn header_buttons(
     for (i, (label, glyph, kind, enabled)) in buttons.iter().enumerate().rev() {
         let w = ui
             .painter()
-            .layout_no_wrap((*label).to_owned(), font.clone(), theme::INK)
+            .layout_no_wrap((*label).to_owned(), font.clone(), theme::ink())
             .size()
             .x
             + px(14.0 + 6.0 + 40.0);
@@ -313,7 +313,7 @@ pub fn accessible(
         resp.ctx.layer_painter(resp.layer_id).with_clip_rect(clip).rect_stroke(
             rect.expand(grow),
             theme::corner(radius + grow),
-            egui::Stroke::new(1.5, theme::with_alpha(theme::FOCUS, 220)),
+            egui::Stroke::new(1.5, theme::with_alpha(theme::focus(), 220)),
             egui::StrokeKind::Inside,
         );
     }
@@ -357,7 +357,7 @@ pub fn link(ui: &mut egui::Ui, pos: Pos2, align: Align2, text: &str, color: egui
         .interact(rect.expand(theme::px(4.0, s)), ui.make_persistent_id(("link", text, rect.left() as i32, rect.top() as i32)), Sense::click())
         .on_hover_cursor(egui::CursorIcon::PointingHand);
     accessible(&resp, rect.expand(theme::px(4.0, s)), egui::Role::Link, text, None, theme::px(4.0, s));
-    let c = if resp.hovered() { theme::lerp_color(color, theme::INK, 0.4) } else { color };
+    let c = if resp.hovered() { theme::lerp_color(color, theme::ink(), 0.4) } else { color };
     ui.painter().galley(rect.min, galley, c);
     resp
 }

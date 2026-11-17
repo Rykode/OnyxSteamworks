@@ -7,7 +7,7 @@ pub fn chip_size(ui: &egui::Ui, label: &str, s: f32) -> Vec2 {
     let font = FontId::new(theme::text_px(12.0, s), theme::family_medium());
     let w = ui
         .painter()
-        .layout_no_wrap(label.to_string(), font, theme::INK)
+        .layout_no_wrap(label.to_string(), font, theme::ink())
         .size()
         .x;
     Vec2::new(w + px(22.0), px(28.0))
@@ -27,11 +27,11 @@ pub fn chip(ui: &mut egui::Ui, rect: Rect, label: &str, selected: bool, s: f32) 
         anim::ease_out_cubic,
     );
     let fill = theme::lerp_color(
-        theme::lerp_color(theme::SURFACE, theme::FIELD, hover),
-        theme::FIELD_HI,
+        theme::lerp_color(theme::surface(), theme::field(), hover),
+        theme::field_hi(),
         sel,
     );
-    let border = theme::lerp_color(theme::LINE_SOFT, theme::LINE, sel.max(hover));
+    let border = theme::lerp_color(theme::line_soft(), theme::line(), sel.max(hover));
     let painter = ui.painter();
     painter.rect_filled(rect, theme::corner(rect.height() / 2.0), fill);
     painter.rect_stroke(
@@ -40,7 +40,7 @@ pub fn chip(ui: &mut egui::Ui, rect: Rect, label: &str, selected: bool, s: f32) 
         egui::Stroke::new(1.0, border),
         egui::StrokeKind::Inside,
     );
-    let text = theme::lerp_color(theme::INK_MUTED, theme::INK, sel.max(hover * 0.6));
+    let text = theme::lerp_color(theme::ink_muted(), theme::ink(), sel.max(hover * 0.6));
     painter.text(
         rect.center(),
         Align2::CENTER_CENTER,
@@ -53,7 +53,7 @@ pub fn chip(ui: &mut egui::Ui, rect: Rect, label: &str, selected: bool, s: f32) 
             painter,
             rect.expand(2.0),
             rect.height() / 2.0 + 2.0,
-            theme::with_alpha(theme::FOCUS, 180),
+            theme::with_alpha(theme::focus(), 180),
         );
     }
     resp

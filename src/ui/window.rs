@@ -80,11 +80,11 @@ pub fn titlebar(ui: &mut egui::Ui, rect: Rect, s: f32) {
                     CLOSE_RED,
                     (hover * if pressed { 200.0 } else { 255.0 }) as u8,
                 ),
-                theme::lerp_color(theme::INK_MUTED, Color32::WHITE, hover),
+                theme::lerp_color(theme::ink_muted(), Color32::WHITE, hover),
             ),
             _ => (
-                theme::with_alpha(theme::FIELD_HI, (hover * 255.0) as u8),
-                theme::lerp_color(theme::INK_MUTED, theme::INK, hover),
+                theme::with_alpha(theme::field_hi(), (hover * 255.0) as u8),
+                theme::lerp_color(theme::ink_muted(), theme::ink(), hover),
             ),
         };
         ui.painter().rect_filled(r, theme::corner(0.0), fill);

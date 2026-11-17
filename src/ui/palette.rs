@@ -123,7 +123,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
         kit::surface(
             &ui.painter().clone(),
             field,
-            theme::FIELD,
+            theme::field(),
             px(theme::RADIUS_FIELD),
         );
         ui.painter().text(
@@ -131,7 +131,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
             Align2::LEFT_CENTER,
             theme::icon::MAGNIFYING_GLASS.to_string(),
             theme::icon_font(px(15.0), false),
-            theme::INK_MUTED,
+            theme::ink_muted(),
         );
         let inner = Rect::from_min_max(
             Pos2::new(field.left() + px(38.0), field.top()),
@@ -144,7 +144,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 .margin(egui::Margin::ZERO)
                 .align(Align2::LEFT_CENTER)
                 .hint_text("Type a command or page...")
-                .text_color(theme::INK)
+                .text_color(theme::ink())
                 .desired_width(f32::INFINITY),
         );
         if resp.changed() {
@@ -172,7 +172,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
                         Align2::LEFT_TOP,
                         "No matching commands.",
                         FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-                        theme::INK_MUTED,
+                        theme::ink_muted(),
                     );
                 }
                 for (row, &ai) in ranked.iter().enumerate() {
@@ -185,19 +185,19 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
                     crate::ui::kit::accessible(&sense, r, egui::Role::ListBoxOption, &a.title, Some(on), theme::px(theme::RADIUS_FIELD, s));
                     let hover = sense.hovered();
                     let fill = if on {
-                        theme::FIELD_HI
+                        theme::field_hi()
                     } else if hover {
-                        theme::FIELD
+                        theme::field()
                     } else {
-                        theme::SURFACE_2
+                        theme::surface_2()
                     };
-                    kit::bordered(ui.painter(), r, fill, theme::LINE, px(theme::RADIUS_CARD));
+                    kit::bordered(ui.painter(), r, fill, theme::line(), px(theme::RADIUS_CARD));
                     ui.painter().text(
                         Pos2::new(r.left() + px(14.0), r.center().y),
                         Align2::LEFT_CENTER,
                         &a.title,
                         FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-                        theme::INK,
+                        theme::ink(),
                     );
                     if let Some(sc) = &a.shortcut {
                         ui.painter().text(
@@ -205,7 +205,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
                             Align2::RIGHT_CENTER,
                             sc,
                             FontId::new(theme::text_px(11.5, s), theme::family_medium()),
-                            theme::INK_MUTED,
+                            theme::ink_muted(),
                         );
                     }
                     if sense.clicked() {

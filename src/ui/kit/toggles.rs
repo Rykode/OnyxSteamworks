@@ -30,26 +30,26 @@ pub fn checkbox(
     painter.rect_filled(
         box_rect,
         theme::corner(radius),
-        theme::lerp_color(theme::FIELD, theme::ACCENT, t),
+        theme::lerp_color(theme::field(), theme::accent(), t),
     );
     painter.rect_stroke(
         box_rect,
         theme::corner(radius),
         Stroke::new(
             1.0,
-            theme::lerp_color(theme::INK_FAINT, theme::ACCENT_HI, t),
+            theme::lerp_color(theme::ink_faint(), theme::accent_hi(), t),
         ),
         StrokeKind::Inside,
     );
     if t > 0.01 {
-        draw_check(painter, box_rect, t, theme::PRIMARY_INK, s);
+        draw_check(painter, box_rect, t, theme::primary_ink(), s);
     }
     if resp.has_focus() {
         theme::focus_ring(
             painter,
             box_rect.expand(2.0),
             radius + 2.0,
-            theme::with_alpha(theme::FOCUS, 180),
+            theme::with_alpha(theme::focus(), 180),
         );
     }
     if !label.is_empty() {
@@ -58,7 +58,7 @@ pub fn checkbox(
             Align2::LEFT_CENTER,
             label,
             FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-            theme::INK_DIM,
+            theme::ink_dim(),
         );
     }
     resp
@@ -100,7 +100,7 @@ pub fn toggle(ui: &mut egui::Ui, rect: Rect, on: &mut bool, label: &str, s: f32)
     resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Switch, true, state, label));
     let ctx = ui.ctx().clone();
     let t = anim::anim_bool(&ctx, id.with("on"), *on, 0.18, anim::ease_out_cubic);
-    let track = theme::lerp_color(theme::FIELD_HI, theme::ACCENT, t.clamp(0.0, 1.0));
+    let track = theme::lerp_color(theme::field_hi(), theme::accent(), t.clamp(0.0, 1.0));
     let painter = ui.painter();
     painter.rect_filled(rect, theme::corner(rect.height() / 2.0), track);
     painter.rect_stroke(
@@ -108,7 +108,7 @@ pub fn toggle(ui: &mut egui::Ui, rect: Rect, on: &mut bool, label: &str, s: f32)
         theme::corner(rect.height() / 2.0),
         Stroke::new(
             1.0,
-            theme::lerp_color(theme::LINE, theme::ACCENT_HI, t.clamp(0.0, 1.0)),
+            theme::lerp_color(theme::line(), theme::accent_hi(), t.clamp(0.0, 1.0)),
         ),
         StrokeKind::Inside,
     );
@@ -121,14 +121,14 @@ pub fn toggle(ui: &mut egui::Ui, rect: Rect, on: &mut bool, label: &str, s: f32)
     painter.circle_filled(
         egui::pos2(x, rect.center().y),
         thumb_r,
-        theme::lerp_color(theme::INK_MUTED, theme::PRIMARY_INK, t.clamp(0.0, 1.0)),
+        theme::lerp_color(theme::ink_muted(), theme::primary_ink(), t.clamp(0.0, 1.0)),
     );
     if resp.has_focus() {
         theme::focus_ring(
             painter,
             rect.expand(2.0),
             rect.height() / 2.0 + 2.0,
-            theme::with_alpha(theme::FOCUS, 180),
+            theme::with_alpha(theme::focus(), 180),
         );
     }
     resp

@@ -23,7 +23,7 @@ pub(super) fn show(
             egui::Align2::CENTER_CENTER,
             "No builds match these filters.",
             FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-            theme::INK_MUTED,
+            theme::ink_muted(),
         );
         return None;
     }
@@ -44,7 +44,7 @@ pub(super) fn show(
                     ui.label(
                         RichText::new(title)
                             .font(FontId::new(theme::text_px(11.0, s), theme::family_label()))
-                            .color(theme::INK_MUTED),
+                            .color(theme::ink_muted()),
                     );
                 });
             }
@@ -54,7 +54,7 @@ pub(super) fn show(
                 let i = row.index();
                 let rec = rows[i];
                 {
-                    cell(&mut row, &rel_time(rec.timestamp), theme::INK_DIM, s);
+                    cell(&mut row, &rel_time(rec.timestamp), theme::ink_dim(), s);
                     let name = projects
                         .iter()
                         .find(|p| p.id == rec.project_id)
@@ -67,16 +67,16 @@ pub(super) fn show(
                         })
                         .unwrap_or("Unknown")
                         .to_string();
-                    cell(&mut row, &name, theme::INK, s);
-                    cell(&mut row, &rec.branch, theme::INK_DIM, s);
+                    cell(&mut row, &name, theme::ink(), s);
+                    cell(&mut row, &rec.branch, theme::ink_dim(), s);
                     cell(
                         &mut row,
                         status_label(rec.status),
                         status_color(rec.status),
                         s,
                     );
-                    cell(&mut row, &fmt_duration(rec.duration_ms), theme::INK_DIM, s);
-                    cell(&mut row, &rec.description, theme::INK_DIM, s);
+                    cell(&mut row, &fmt_duration(rec.duration_ms), theme::ink_dim(), s);
+                    cell(&mut row, &rec.description, theme::ink_dim(), s);
                     let resp = row.response();
                     crate::ui::kit::accessible(
                         &resp,

@@ -25,7 +25,7 @@ pub fn show(ui: &mut egui::Ui, rect: Rect, report: &AdvisorReport, s: f32) {
             Align2::LEFT_TOP,
             "Nothing to flag. Build sizes look healthy.",
             FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-            theme::INK_MUTED,
+            theme::ink_muted(),
         );
         return;
     }
@@ -53,7 +53,7 @@ pub fn show(ui: &mut egui::Ui, rect: Rect, report: &AdvisorReport, s: f32) {
                             c.changes,
                             c.builds
                         ),
-                        theme::WARNING,
+                        theme::warning(),
                         s,
                     );
                 }
@@ -70,7 +70,7 @@ pub fn show(ui: &mut egui::Ui, rect: Rect, report: &AdvisorReport, s: f32) {
                             human_size(e.size),
                             e.entropy
                         ),
-                        theme::INK_DIM,
+                        theme::ink_dim(),
                         s,
                     );
                 }
@@ -95,7 +95,7 @@ pub fn show(ui: &mut egui::Ui, rect: Rect, report: &AdvisorReport, s: f32) {
                             d.count,
                             human_size(d.wasted)
                         ),
-                        theme::DANGER,
+                        theme::danger(),
                         s,
                     );
                 }
@@ -109,7 +109,7 @@ fn advice_row(ui: &mut egui::Ui, text: &str, s: f32) {
     let galley = ui.painter().layout(
         text.to_string(),
         FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-        theme::INK_DIM,
+        theme::ink_dim(),
         ui.available_width() - px(28.0),
     );
     let h = galley.size().y + px(20.0);
@@ -117,8 +117,8 @@ fn advice_row(ui: &mut egui::Ui, text: &str, s: f32) {
     kit::bordered(
         ui.painter(),
         r,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_CARD),
     );
     ui.painter().text(
@@ -126,12 +126,12 @@ fn advice_row(ui: &mut egui::Ui, text: &str, s: f32) {
         Align2::LEFT_CENTER,
         "!",
         FontId::new(theme::text_px(14.0, s), theme::family_semibold()),
-        theme::WARNING,
+        theme::warning(),
     );
     ui.painter().galley(
         Pos2::new(r.left() + px(28.0), r.top() + px(10.0)),
         galley,
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
     ui.add_space(px(8.0));
 }
@@ -160,8 +160,8 @@ fn finding(ui: &mut egui::Ui, path: &str, meta: &str, dot: egui::Color32, s: f32
     kit::bordered(
         ui.painter(),
         r,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_CARD),
     );
     ui.painter()
@@ -172,14 +172,14 @@ fn finding(ui: &mut egui::Ui, path: &str, meta: &str, dot: egui::Color32, s: f32
         Align2::LEFT_CENTER,
         shown,
         FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-        theme::INK,
+        theme::ink(),
     );
     ui.painter().text(
         Pos2::new(r.left() + px(28.0), r.center().y + px(8.0)),
         Align2::LEFT_CENTER,
         meta,
         FontId::new(theme::text_px(11.0, s), theme::family_medium()),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     ui.add_space(px(8.0));
 }

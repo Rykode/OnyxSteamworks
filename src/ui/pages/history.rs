@@ -51,8 +51,8 @@ fn builds_tab(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
     kit::bordered(
         &ui.painter().clone(),
         table_rect,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_PANEL_MIN),
     );
     let inner = table_rect.shrink(px(14.0));
@@ -124,6 +124,28 @@ fn status_range_chips(app: &mut App, ui: &mut egui::Ui, rect: Rect, top: f32, s:
         }
         x += size.x + px(8.0);
     }
+    // Branch filter: every branch seen in history, newest first.
+    let mut branches: Vec<String> = Vec::new();
+    for r in &app.history_ui.records {
+        if !branches.contains(&r.branch) {
+            branches.push(r.branch.clone());
+        }
+    }
+    if branches.len() > 1 {
+        let mut labels = vec!["All branches".to_string()];
+        labels.extend(branches.iter().map(|b| if b.is_empty() { "default".to_string() } else { b.clone() }));
+        let refs: Vec<&str> = labels.iter().map(String::as_str).collect();
+        let mut sel = app
+            .history_ui
+            .branch_filter
+            .as_ref()
+            .and_then(|b| branches.iter().position(|x| x == b))
+            .map_or(0, |i| i + 1);
+        let w = px(180.0);
+        let dd = Rect::from_min_size(Pos2::new((rect.right() - w).max(x + px(16.0)), top - px(4.0)), egui::vec2(w, px(32.0)));
+        kit::dropdown(ui, dd, &refs, &mut sel, s);
+        app.history_ui.branch_filter = sel.checked_sub(1).and_then(|i| branches.get(i).cloned());
+    }
     top + px(30.0)
 }
 
@@ -166,10 +188,10 @@ pub(super) fn status_label(status: BuildStatus) -> &'static str {
 
 pub(super) fn status_color(status: BuildStatus) -> Color32 {
     match status {
-        BuildStatus::Success => theme::SUCCESS,
-        BuildStatus::Failed => theme::DANGER,
-        BuildStatus::Cancelled => theme::WARNING,
-        _ => theme::INK_MUTED,
+        BuildStatus::Success => theme::success(),
+        BuildStatus::Failed => theme::danger(),
+        BuildStatus::Cancelled => theme::warning(),
+        _ => theme::ink_muted(),
     }
 }
 

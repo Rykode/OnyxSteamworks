@@ -122,7 +122,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Align2::LEFT_TOP,
         "Webhook URL",
         FontId::new(theme::text_px(11.5, s), theme::family_label()),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     let field = Rect::from_min_size(
         Pos2::new(rect.left(), y + px(18.0)),
@@ -167,7 +167,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Align2::LEFT_TOP,
         status,
         FontId::new(theme::text_px(11.5, s), theme::family_medium()),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
 
     let test = Rect::from_min_size(
@@ -238,7 +238,7 @@ fn toggle_row(
         Align2::LEFT_CENTER,
         label,
         FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
     *y += px(38.0);
 }

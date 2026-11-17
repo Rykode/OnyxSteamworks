@@ -19,14 +19,14 @@ pub(super) fn chrome(ui: &mut egui::Ui, d: Rect, view: &View, intent: &mut Inten
         Align2::LEFT_TOP,
         steps::title(view.step),
         FontId::new(theme::text_px(19.0, s), theme::family_semibold()),
-        theme::INK,
+        theme::ink(),
     );
     painter.text(
         Pos2::new(d.right() - px(56.0), d.top() + px(28.0)),
         Align2::RIGHT_CENTER,
         format!("STEP {} / {}", view.step + 1, STEPS),
         FontId::new(theme::text_px(11.0, s), theme::family_label()),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     let close = Rect::from_min_size(
         Pos2::new(d.right() - px(44.0), d.top() + px(14.0)),

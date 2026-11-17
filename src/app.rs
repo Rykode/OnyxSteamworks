@@ -46,6 +46,13 @@ pub struct App {
     pub(crate) confirm_quit: bool,
     pub(crate) quitting: bool,
     pub(crate) toasts: kit::Toasts,
+    pub(crate) undo: crate::ui::undo::UndoStack,
+    pub(crate) tray: Option<crate::ui::tray::Tray>,
+    /// Set by the tray's Quit: the next close request really quits.
+    pub(crate) force_quit: bool,
+    taskbar: crate::ui::taskbar::Taskbar,
+    /// A build or run failed while the window was not focused; the taskbar stays red until seen.
+    failed_unseen: bool,
     login_status: (String, f64, bool),
 }
 
@@ -56,6 +63,7 @@ impl App {
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
         let startup = crate::config::load_settings().unwrap_or_default();
+        theme::set_mode(&cc.egui_ctx, startup.theme);
         anim::set_reduce_motion(startup.reduce_motion);
         if startup.ui_scale > 0.0 {
             theme::set_ui_scale(startup.ui_scale);
@@ -74,14 +82,34 @@ impl App {
                 Vec::new()
             }
         };
+        crate::features::updates::spawn_check(&cc.egui_ctx);
+
+        // Reopen where the user left off: page, sub-tabs and project.
+        let page = nav::ITEMS
+            .get(startup.last_page as usize)
+            .map(|item| item.page)
+            .unwrap_or_default();
+        let mut sub_tabs = [0usize; 5];
+        for ((slot, saved), item) in sub_tabs.iter_mut().zip(startup.last_sub_tabs).zip(nav::ITEMS.iter()) {
+            *slot = (saved as usize).min(item.sub_tabs.len().saturating_sub(1));
+        }
+        let mut projects_ui = pages::projects::ProjectsState::new();
+        if let Some(p) = startup
+            .last_opened_project
+            .as_ref()
+            .and_then(|id| projects.iter().find(|p| &p.id == id))
+        {
+            projects_ui.select(p);
+            projects_ui.inited = true;
+        }
 
         Self {
-            page: Page::default(),
+            page: if open_wizard { Page::default() } else { page },
             prev_page: None,
             transition: None,
             projects,
-            sub_tabs: [0; 5],
-            projects_ui: pages::projects::ProjectsState::new(),
+            sub_tabs,
+            projects_ui,
             build_ui: pages::build::BuildState::new(),
             history_ui: pages::history::HistoryState::new(),
             backup_ui: pages::history::BackupState::new(),
@@ -105,6 +133,11 @@ impl App {
             confirm_quit: false,
             quitting: false,
             toasts: kit::Toasts::default(),
+            undo: Default::default(),
+            tray: None,
+            force_quit: false,
+            taskbar: crate::ui::taskbar::Taskbar::new(cc),
+            failed_unseen: false,
             login_status: (String::new(), f64::NEG_INFINITY, false),
         }
     }
@@ -147,7 +180,7 @@ impl App {
             Align2::LEFT_CENTER,
             item.label,
             FontId::new(theme::text_px(28.0, s), theme::family_semibold()),
-            theme::INK,
+            theme::ink(),
         );
         kit::readable(ui, title, egui::Role::Heading, item.label, false);
         if item.sub_tabs.is_empty() {
@@ -161,7 +194,7 @@ impl App {
             .iter()
             .map(|t| {
                 ui.painter()
-                    .layout_no_wrap((*t).to_owned(), font.clone(), theme::INK)
+                    .layout_no_wrap((*t).to_owned(), font.clone(), theme::ink())
                     .size()
                     .x
                     + pad * 2.0
@@ -175,7 +208,7 @@ impl App {
         ui.painter().rect_filled(
             bar,
             theme::corner(px(theme::RADIUS_FIELD)),
-            theme::FIELD,
+            theme::field(),
         );
         let id = ui.make_persistent_id(("header_tabs", idx));
         let active = self.sub_tabs[idx].min(widths.len() - 1);
@@ -192,7 +225,7 @@ impl App {
         );
         theme::shadow(ui.painter(), pill, px(8.0), 6, 40);
         ui.painter()
-            .rect_filled(pill, theme::corner(px(8.0)), theme::SURFACE_2);
+            .rect_filled(pill, theme::corner(px(8.0)), theme::surface_2());
         let mut left = bar.left() + inset;
         for (i, label) in item.sub_tabs.iter().enumerate() {
             let seg = egui::Rect::from_min_size(
@@ -205,11 +238,11 @@ impl App {
                 self.sub_tabs[idx] = i;
             }
             let color = if i == active {
-                theme::INK
+                theme::ink()
             } else if resp.hovered() {
-                theme::INK_DIM
+                theme::ink_dim()
             } else {
-                theme::INK_MUTED
+                theme::ink_muted()
             };
             ui.painter()
                 .text(seg.center(), Align2::CENTER_CENTER, *label, font.clone(), color);
@@ -231,13 +264,93 @@ impl App {
     }
 }
 
+impl App {
+    /// Hide the window to the notification area ("close to tray").
+    pub(crate) fn hide_to_tray(&mut self, ctx: &egui::Context) {
+        if self.tray.is_none() {
+            self.tray = crate::ui::tray::Tray::spawn(ctx);
+        }
+        if self.tray.is_some() {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+        } else {
+            // No tray support here: minimise instead so the app is never lost.
+            ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(true));
+        }
+    }
+
+    fn show_from_tray(&mut self, ctx: &egui::Context) {
+        self.tray = None;
+        ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
+        ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(false));
+        ctx.send_viewport_cmd(egui::ViewportCommand::Focus);
+    }
+
+    fn pump_tray(&mut self, ctx: &egui::Context) {
+        let events = self.tray.as_ref().map(|t| t.poll()).unwrap_or_default();
+        for ev in events {
+            match ev {
+                crate::ui::tray::TrayEvent::Show => self.show_from_tray(ctx),
+                crate::ui::tray::TrayEvent::Quit => {
+                    // Show the window first so the quit guard can ask about running work.
+                    self.show_from_tray(ctx);
+                    self.force_quit = true;
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+            }
+        }
+    }
+
+    fn update_taskbar(&mut self, ctx: &egui::Context) {
+        use crate::ui::taskbar::Progress;
+        let focused = ctx.input(|i| i.viewport().focused.unwrap_or(true));
+        if focused {
+            self.failed_unseen = false;
+        }
+        let b = &self.build_ui;
+        let progress = if b.running && !b.authorizing {
+            match b.stage {
+                Some(crate::steamcmd::Stage::Uploading) if b.progress > 0.0 => {
+                    Progress::Normal(b.progress)
+                }
+                _ => Progress::Indeterminate,
+            }
+        } else if self.pipeline_ui.running || self.scheduler.busy() || b.verify_ui.running() {
+            Progress::Indeterminate
+        } else if self.failed_unseen {
+            Progress::Error
+        } else {
+            Progress::None
+        };
+        self.taskbar.set(progress);
+    }
+
+    /// Called when a build or pipeline run ends: sound, and a red taskbar if unseen.
+    pub(crate) fn on_run_finished(&mut self, ctx: &egui::Context, success: bool) {
+        crate::features::sound::on_finish(ctx, success);
+        if !success && !ctx.input(|i| i.viewport().focused.unwrap_or(true)) {
+            self.failed_unseen = true;
+        }
+    }
+}
+
 impl eframe::App for App {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        theme::sync(ctx);
         crate::ui::pages::build::pump(self, ctx);
         crate::ui::pages::history::pump(self, ctx);
         crate::ui::pages::settings::pump(self);
+        let pipeline_was_running = self.pipeline_ui.running;
         for (level, msg) in self.pipeline_ui.drain(ctx) {
             self.toasts.push(level, msg);
+        }
+        if pipeline_was_running && !self.pipeline_ui.running {
+            use crate::features::pipeline::PipelineOutcome;
+            match self.pipeline_ui.outcome {
+                Some(PipelineOutcome::Completed) => self.on_run_finished(ctx, true),
+                Some(PipelineOutcome::Failed) => self.on_run_finished(ctx, false),
+                // A cancel is the user's own doing: no error sound or red taskbar.
+                _ => {}
+            }
         }
         let pipeline_busy =
             self.pipeline_ui.running || self.build_ui.running || self.build_ui.verify_ui.running();
@@ -250,6 +363,40 @@ impl eframe::App for App {
         for msg in crate::config::take_problems() {
             self.toasts.push(kit::ToastLevel::Error, msg);
         }
+        if let Some(update) = crate::features::updates::take_found() {
+            let url = update.url.clone();
+            self.offer_action(
+                kit::ToastLevel::Success,
+                format!("Onyx {} is available", update.version),
+                "Open",
+                false,
+                true,
+                move |_| {
+                    let _ = open::that(url);
+                    Ok(())
+                },
+            );
+        }
+        self.pump_undo();
+        self.pump_tray(ctx);
+        crate::ui::quitguard::intercept_close(self, ctx);
+        self.update_taskbar(ctx);
+    }
+
+    fn on_exit(&mut self) {
+        let Ok(mut settings) = crate::config::load_settings() else {
+            return;
+        };
+        settings.last_page = nav::index(self.page) as u8;
+        for (slot, tab) in settings.last_sub_tabs.iter_mut().zip(self.sub_tabs) {
+            *slot = tab.min(u8::MAX as usize) as u8;
+        }
+        settings.last_opened_project = self
+            .projects_ui
+            .selected
+            .clone()
+            .or_else(|| self.projects.get(self.build_ui.project_sel).map(|p| p.id.clone()));
+        let _ = crate::config::save_settings(&settings);
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
@@ -261,7 +408,7 @@ impl eframe::App for App {
                 let s = lay.scale;
 
                 ui.painter()
-                    .rect_filled(ui.max_rect(), theme::corner(0.0), theme::SIDEBAR);
+                    .rect_filled(ui.max_rect(), theme::corner(0.0), theme::sidebar());
                 crate::ui::window::titlebar(ui, lay.titlebar, s);
 
                 let account = self
@@ -304,11 +451,15 @@ impl eframe::App for App {
                 if !blocked && ctx.input(|i| i.modifiers.command && i.key_pressed(egui::Key::K)) {
                     self.palette.toggle();
                 }
+                // Ctrl+Enter builds, Ctrl+Shift+Enter runs a preview. Both go through the
+                // normal launch path, so the Live confirmation and preflight still apply.
                 if !blocked
                     && !self.palette.open
                     && ctx.input(|i| i.modifiers.command && i.key_pressed(egui::Key::Enter))
                 {
-                    crate::ui::palette::start_build(self, false, &ctx);
+                    // Never turn a preview into a real upload: keep the toggle if it is on.
+                    let preview = ctx.input(|i| i.modifiers.shift) || self.build_ui.preview_only;
+                    crate::ui::palette::start_build(self, preview, &ctx);
                 }
 
                 let mut nav_to = None;

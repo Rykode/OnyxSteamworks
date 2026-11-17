@@ -154,11 +154,14 @@ impl PipelineState {
         }
     }
 
-    pub fn delete_pipeline(&mut self) {
+    pub fn delete_pipeline(&mut self) -> Option<Pipeline> {
         if self.pipeline_sel < self.draft.pipelines.len() {
-            self.draft.pipelines.remove(self.pipeline_sel);
+            let removed = self.draft.pipelines.remove(self.pipeline_sel);
             self.pipeline_sel = self.pipeline_sel.saturating_sub(1);
             self.expanded = None;
+            Some(removed)
+        } else {
+            None
         }
     }
 

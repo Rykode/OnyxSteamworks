@@ -37,7 +37,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Align2::LEFT_TOP,
         "Add a build account and authorize it once. SteamCMD caches the login, so later builds skip the Steam Guard prompt.",
         FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
 
     let yf = rect.top() + px(48.0);
@@ -116,8 +116,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     kit::bordered(
                         ui.painter(),
                         r,
-                        theme::SURFACE_2,
-                        theme::LINE,
+                        theme::surface_2(),
+                        theme::line(),
                         px(theme::RADIUS_CARD),
                     );
                     let authed = steamcmd
@@ -125,9 +125,9 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                         .map(|p| accounts::is_authorized(p, name))
                         .unwrap_or(false);
                     let dot = if authed {
-                        theme::SUCCESS
+                        theme::success()
                     } else {
-                        theme::WARNING
+                        theme::warning()
                     };
                     ui.painter().circle_filled(
                         Pos2::new(r.left() + px(16.0), r.center().y),
@@ -143,7 +143,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                         Align2::LEFT_CENTER,
                         title,
                         FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
-                        theme::INK,
+                        theme::ink(),
                     );
                     let status = if authed {
                         "Authorized cached login"
@@ -155,7 +155,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                         Align2::LEFT_CENTER,
                         status,
                         FontId::new(theme::text_px(11.0, s), theme::family_medium()),
-                        theme::INK_MUTED,
+                        theme::ink_muted(),
                     );
 
                     let bw = px(30.0);
@@ -214,7 +214,7 @@ fn remember_toggle(ui: &mut egui::Ui, rect: Rect, cfg: &mut crate::config::Setti
         Align2::LEFT_CENTER,
         "Remember passwords in the OS keyring (optional; off by default)",
         FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
 }
 

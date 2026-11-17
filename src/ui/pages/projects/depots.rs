@@ -49,7 +49,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
         Pos2::new(card.right() - px(20.0), card.top() + px(26.0)),
         Align2::RIGHT_CENTER,
         "+ Add depot",
-        theme::INK_FAINT,
+        theme::ink_faint(),
         s,
     );
     egui::Popup::menu(&add).show(|ui| {
@@ -97,14 +97,14 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                     Align2::LEFT_CENTER,
                     title,
                     11.5,
-                    theme::INK_FAINT,
+                    theme::ink_faint(),
                     s,
                 );
             }
             let sep = |y: f32| {
                 ui.painter().line_segment(
                     [Pos2::new(x0, y), Pos2::new(x1, y)],
-                    Stroke::new(1.0, theme::LINE_SOFT),
+                    Stroke::new(1.0, theme::line_soft()),
                 )
             };
             let mut y = top + px(76.0);
@@ -115,7 +115,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                     Align2::LEFT_CENTER,
                     "No depots yet. Add one above.",
                     FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-                    theme::INK_FAINT,
+                    theme::ink_faint(),
                 );
                 y += px(ROW);
             }
@@ -130,7 +130,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                     ui.painter().rect_filled(
                         row.shrink2(Vec2::new(0.0, px(3.0))),
                         theme::corner(px(8.0)),
-                        theme::with_alpha(theme::SURFACE_2, 200),
+                        theme::with_alpha(theme::surface_2(), 200),
                     );
                 }
                 if resp.clicked() {
@@ -153,7 +153,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                     Align2::LEFT_CENTER,
                     id,
                     mono(13.0),
-                    theme::INK,
+                    theme::ink(),
                     cell(0).width(),
                 );
                 let (_, cut_path) = kit::fit_text(
@@ -162,7 +162,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                     Align2::LEFT_CENTER,
                     &path_label,
                     mono(13.0),
-                    theme::INK_DIM,
+                    theme::ink_dim(),
                     cell(1).width(),
                 );
                 let target = classify_os(&d.name)
@@ -184,7 +184,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                     Align2::LEFT_CENTER,
                     &ignore_label,
                     mono(12.0),
-                    theme::INK_MUTED,
+                    theme::ink_muted(),
                     cell(3).width(),
                 );
                 if cut_id || cut_path || cut_ignore {
@@ -205,7 +205,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                 Align2::LEFT_CENTER,
                 "Branches",
                 12.5,
-                theme::INK_MUTED,
+                theme::ink_muted(),
                 s,
             );
             if kit::link(
@@ -213,7 +213,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                 Pos2::new(x1, title_y),
                 Align2::RIGHT_CENTER,
                 "+ Add branch",
-                theme::INK_FAINT,
+                theme::ink_faint(),
                 s,
             )
             .clicked()
@@ -229,7 +229,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32, ctx: &e
                     Align2::LEFT_CENTER,
                     "No branches yet.",
                     FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-                    theme::INK_FAINT,
+                    theme::ink_faint(),
                 );
             }
             for i in 0..n_branches {
@@ -289,7 +289,7 @@ pub(super) fn modals(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Conte
                     Align2::LEFT_CENTER,
                     "Edit depot",
                     FontId::new(theme::text_px(15.0, s), theme::family_semibold()),
-                    theme::INK,
+                    theme::ink(),
                 );
                 let body = Rect::from_min_max(
                     Pos2::new(d.left() + px(26.0), d.top() + px(56.0)),
@@ -393,8 +393,8 @@ fn depot_card(
     kit::bordered(
         &ui.painter().clone(),
         card,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_CARD),
     );
     let pad = px(PAD);
@@ -456,8 +456,8 @@ fn depot_card(
     kit::bordered(
         &ui.painter().clone(),
         pr,
-        theme::FIELD,
-        theme::LINE,
+        theme::field(),
+        theme::line(),
         px(theme::RADIUS_FIELD),
     );
     let lp = app.projects_ui.base.depots[i]
@@ -465,9 +465,9 @@ fn depot_card(
         .to_string_lossy()
         .to_string();
     let (txt, col) = if lp.is_empty() {
-        ("local path".to_string(), theme::INK_FAINT)
+        ("local path".to_string(), theme::ink_faint())
     } else {
-        (lp.clone(), theme::INK_DIM)
+        (lp.clone(), theme::ink_dim())
     };
     let text_clip = pr.shrink2(Vec2::new(px(14.0), 0.0));
     let galley =
@@ -541,7 +541,7 @@ fn depot_card(
             Align2::RIGHT_CENTER,
             format!("{files} files  {}", human_size(bytes)),
             FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-            theme::INK_MUTED,
+            theme::ink_muted(),
         );
     }
     y += px(OPT_H + ROW_GAP + 4.0);
@@ -551,7 +551,7 @@ fn depot_card(
         Align2::LEFT_TOP,
         "Exclusions",
         FontId::new(theme::text_px(11.0, s), theme::family_label()),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     y += px(LABEL_H);
     for j in 0..n_excl {

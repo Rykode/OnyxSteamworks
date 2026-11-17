@@ -14,6 +14,7 @@ pub(super) fn open_target(target: String) {
 
 #[derive(Clone, Copy)]
 enum Tool {
+    RebuildLast,
     CopyCli,
     CopySteamCmd,
     ExportCi,
@@ -24,7 +25,8 @@ enum Tool {
     Reauthorize,
 }
 
-const TOOLS: [(Tool, char, &str); 8] = [
+const TOOLS: [(Tool, char, &str); 9] = [
+    (Tool::RebuildLast, theme::icon::ROCKET, "Rebuild last run (same settings)"),
     (Tool::CopyCli, theme::icon::COPY, "Copy Onyx CLI command"),
     (Tool::CopySteamCmd, theme::icon::COPY, "Copy SteamCMD command"),
     (Tool::ExportCi, theme::icon::UPLOAD, "Export CI workflow\u{2026}"),
@@ -56,12 +58,16 @@ pub(super) fn more_actions(
     }
 
     let has_user = !project.steam_username.trim().is_empty();
+    let has_last = app.history_ui.latest_for(&project.id).is_some();
     let items: Vec<kit::MenuItem> = TOOLS
         .iter()
         .map(|(tool, glyph, label)| {
-            kit::MenuItem::new(label)
-                .icon(*glyph)
-                .enabled(!matches!(tool, Tool::Reauthorize) || has_user)
+            let enabled = match tool {
+                Tool::Reauthorize => has_user,
+                Tool::RebuildLast => has_last,
+                _ => true,
+            };
+            kit::MenuItem::new(label).icon(*glyph).enabled(enabled)
         })
         .collect();
     let id = ui.make_persistent_id("build_more_actions");
@@ -78,6 +84,11 @@ pub(super) fn more_actions(
 fn run(app: &mut App, tool: Tool, project: &Project, ctx: &egui::Context) {
     let folder = |p: std::path::PathBuf| p.to_string_lossy().to_string();
     match tool {
+        Tool::RebuildLast => {
+            if let Some(rec) = app.history_ui.latest_for(&project.id).cloned() {
+                super::rebuild(app, &rec, ctx);
+            }
+        }
         Tool::CopyCli => {
             let branch = project
                 .branches

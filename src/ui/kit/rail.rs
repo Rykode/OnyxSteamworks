@@ -43,8 +43,8 @@ fn row_fill(ui: &egui::Ui, row: Rect, active: f32, hover: f32, s: f32) {
         return;
     }
     let fill = theme::lerp_color(
-        theme::with_alpha(theme::SURFACE, (hover * 160.0) as u8),
-        theme::SURFACE,
+        theme::with_alpha(theme::surface(), (hover * 160.0) as u8),
+        theme::surface(),
         active,
     );
     let radius = theme::corner(theme::px(theme::RADIUS_FIELD, s));
@@ -55,7 +55,7 @@ fn row_fill(ui: &egui::Ui, row: Rect, active: f32, hover: f32, s: f32) {
             radius,
             Stroke::new(
                 1.0,
-                theme::with_alpha(theme::LINE_SOFT, (active * 255.0) as u8),
+                theme::with_alpha(theme::line_soft(), (active * 255.0) as u8),
             ),
             StrokeKind::Inside,
         );
@@ -96,7 +96,7 @@ pub fn brand(ui: &egui::Ui, left: f32, cy: f32, s: f32) {
         Align2::LEFT_CENTER,
         "Onyx",
         FontId::new(theme::text_px(27.0, s), theme::family_brand()),
-        theme::INK,
+        theme::ink(),
     );
 }
 
@@ -139,8 +139,8 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
             item.glyph.to_string(),
             theme::icon_font(px(18.0), false),
             theme::lerp_color(
-                theme::lerp_color(theme::INK_MUTED, theme::INK_DIM, hover),
-                theme::ACCENT_HI,
+                theme::lerp_color(theme::ink_muted(), theme::ink_dim(), hover),
+                theme::accent_hi(),
                 t,
             ),
         );
@@ -150,8 +150,8 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
             item.label,
             FontId::new(theme::text_px(15.5, s), theme::family_medium()),
             theme::lerp_color(
-                theme::lerp_color(theme::INK_DIM, theme::INK, hover),
-                theme::INK,
+                theme::lerp_color(theme::ink_dim(), theme::ink(), hover),
+                theme::ink(),
                 t,
             ),
         );
@@ -160,7 +160,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
             Align2::RIGHT_CENTER,
             shortcut_label(item.shortcut),
             FontId::new(theme::text_px(10.5, s), FontFamily::Monospace),
-            theme::INK_FAINT,
+            theme::ink_faint(),
         );
         y += px(46.0);
     }
@@ -173,7 +173,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
     kit_box(
         ui,
         search,
-        theme::lerp_color(theme::FIELD, theme::FIELD_HI, shover),
+        theme::lerp_color(theme::field(), theme::field_hi(), shover),
         s,
     );
     ui.painter().text(
@@ -181,14 +181,14 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
         Align2::CENTER_CENTER,
         theme::icon::MAGNIFYING_GLASS.to_string(),
         theme::icon_font(px(13.0), false),
-        theme::INK_FAINT,
+        theme::ink_faint(),
     );
     ui.painter().text(
         Pos2::new(search.left() + px(35.0), search.center().y),
         Align2::LEFT_CENTER,
         "Command palette",
         FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-        theme::lerp_color(theme::INK_FAINT, theme::INK_MUTED, shover),
+        theme::lerp_color(theme::ink_faint(), theme::ink_muted(), shover),
     );
     kbd(
         ui,
@@ -208,7 +208,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
     ui.painter().rect_filled(
         acct,
         theme::corner(px(theme::RADIUS_FIELD)),
-        theme::lerp_color(theme::SURFACE, theme::SURFACE_2, ahover),
+        theme::lerp_color(theme::surface(), theme::surface_2(), ahover),
     );
     let avatar_r = px(15.5);
     let avatar_c = Pos2::new(acct.left() + px(27.0), acct.center().y);
@@ -218,7 +218,7 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
         Align2::CENTER_CENTER,
         st.initials,
         FontId::new(theme::text_px(12.5, s), theme::family_bold()),
-        theme::INK,
+        theme::ink(),
     );
     let text_x = acct.left() + px(53.0);
     let signed_in = !st.account.is_empty();
@@ -228,15 +228,15 @@ pub fn rail(ui: &mut egui::Ui, rect: Rect, st: RailState<'_>, s: f32) -> Option<
         if signed_in { st.account } else { "No account" },
         FontId::new(theme::text_px(13.5, s), theme::family_bold()),
         if signed_in {
-            theme::INK
+            theme::ink()
         } else {
-            theme::INK_MUTED
+            theme::ink_muted()
         },
     );
     let (status, status_color) = match (signed_in, st.cached) {
-        (true, true) => ("Cached login", theme::SUCCESS),
-        (true, false) => ("Login required", theme::WARNING),
-        (false, _) => ("Add one in Settings", theme::INK_FAINT),
+        (true, true) => ("Cached login", theme::success()),
+        (true, false) => ("Login required", theme::warning()),
+        (false, _) => ("Add one in Settings", theme::ink_faint()),
     };
     let dot = Pos2::new(text_x + px(3.0), acct.center().y + px(8.0));
     ui.painter().circle_filled(dot, px(3.0), status_color);
@@ -260,7 +260,7 @@ fn kit_box(ui: &egui::Ui, r: Rect, fill: Color32, s: f32) {
     ui.painter().rect_stroke(
         r,
         radius,
-        Stroke::new(1.0, theme::LINE_SOFT),
+        Stroke::new(1.0, theme::line_soft()),
         StrokeKind::Inside,
     );
 }
@@ -274,7 +274,7 @@ pub fn kbd(ui: &egui::Ui, right: Pos2, text: &str, s: f32) -> Rect {
     let font = FontId::new(theme::text_px(10.5, s), FontFamily::Monospace);
     let w = ui
         .painter()
-        .layout_no_wrap(text.to_owned(), font.clone(), theme::INK_FAINT)
+        .layout_no_wrap(text.to_owned(), font.clone(), theme::ink_faint())
         .size()
         .x;
     let r = Rect::from_min_max(
@@ -284,7 +284,7 @@ pub fn kbd(ui: &egui::Ui, right: Pos2, text: &str, s: f32) -> Rect {
     ui.painter().rect_stroke(
         r,
         theme::corner(px(4.0)),
-        Stroke::new(1.0, theme::LINE),
+        Stroke::new(1.0, theme::line()),
         StrokeKind::Inside,
     );
     ui.painter().text(
@@ -292,7 +292,7 @@ pub fn kbd(ui: &egui::Ui, right: Pos2, text: &str, s: f32) -> Rect {
         Align2::CENTER_CENTER,
         text,
         font,
-        theme::INK_FAINT,
+        theme::ink_faint(),
     );
     r
 }

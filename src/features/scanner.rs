@@ -214,6 +214,13 @@ pub fn scan(project: &Project) -> Vec<Issue> {
 pub fn preflight(project: &Project) -> Vec<Issue> {
     let mut issues = preflight_checks(project);
     issues.extend(scan(project));
+    let root = crate::features::maintenance::resolve(project).content_root;
+    if crate::features::template::dirty_count(&root).is_some_and(|n| n > 0) {
+        // Fixed wording so "Ignore" keeps working as the count changes.
+        issues.push(Issue::warning(
+            "Content folder has uncommitted git changes; this build won't match a commit",
+        ));
+    }
     let ignored: HashSet<&String> = project.ignored_findings.iter().collect();
     issues.retain(|i| !ignored.contains(&i.message));
     issues

@@ -16,9 +16,9 @@ pub fn segment_progress(ui: &mut egui::Ui, rect: Rect, total: usize, filled: usi
             r,
             theme::corner(rect.height() / 2.0),
             if on {
-                theme::ACCENT
+                theme::accent()
             } else {
-                theme::SEGMENT_IDLE
+                theme::segment_idle()
             },
         );
     }
@@ -36,7 +36,7 @@ pub fn progress_ring(
     let t = anim::anim_value(ui.ctx(), id, frac.clamp(0.0, 1.0), 0.25);
     let stroke_w = theme::px(5.0, s);
     let painter = ui.painter();
-    painter.circle_stroke(center, radius, egui::Stroke::new(stroke_w, theme::TRACK));
+    painter.circle_stroke(center, radius, egui::Stroke::new(stroke_w, theme::track()));
     if t > 0.001 {
         let steps = (96.0 * t).ceil().max(2.0) as usize;
         let start = -std::f32::consts::FRAC_PI_2;
@@ -79,10 +79,10 @@ pub fn progress_bar(ui: &mut egui::Ui, rect: Rect, frac: f32, s: f32) {
     let id = ui.make_persistent_id(("pbar", rect.left() as i32, rect.top() as i32));
     let t = anim::anim_value(ui.ctx(), id, frac.clamp(0.0, 1.0), 0.2);
     let painter = ui.painter();
-    painter.rect_filled(rect, theme::corner(rect.height() / 2.0), theme::TRACK);
+    painter.rect_filled(rect, theme::corner(rect.height() / 2.0), theme::track());
     if t > 0.001 {
         let fill = Rect::from_min_size(rect.min, Vec2::new(rect.width() * t, rect.height()));
-        painter.rect_filled(fill, theme::corner(rect.height() / 2.0), theme::INK);
+        painter.rect_filled(fill, theme::corner(rect.height() / 2.0), theme::ink());
     }
     let _ = s;
 }

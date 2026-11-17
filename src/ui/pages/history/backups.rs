@@ -122,7 +122,7 @@ fn controls(
         Align2::LEFT_CENTER,
         folder,
         FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
     if Button::new("Choose folder", ButtonKind::Secondary)
         .icon(theme::icon::FOLDER)
@@ -152,7 +152,7 @@ fn controls(
         Align2::LEFT_CENTER,
         format!("Keep last {}", cfg.backup_keep),
         FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
     let minus = Rect::from_min_size(
         Pos2::new(rect.left() + px(110.0), y2),
@@ -192,7 +192,7 @@ fn controls(
         Align2::LEFT_CENTER,
         "Auto-delete old backups",
         FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
 
     let can_backup = !app.backup_ui.running
@@ -312,8 +312,8 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 kit::bordered(
                     ui.painter(),
                     r,
-                    theme::SURFACE_2,
-                    theme::LINE,
+                    theme::surface_2(),
+                    theme::line(),
                     px(theme::RADIUS_CARD),
                 );
                 ui.painter().text(
@@ -321,7 +321,7 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     Align2::LEFT_CENTER,
                     format!("Build #{}", info.meta.build_number),
                     FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
-                    theme::INK,
+                    theme::ink(),
                 );
                 let sub = format!(
                     "{}  ·  {}",
@@ -333,7 +333,7 @@ fn rows(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     Align2::LEFT_CENTER,
                     sub,
                     FontId::new(theme::text_px(11.5, s), theme::family_medium()),
-                    theme::INK_MUTED,
+                    theme::ink_muted(),
                 );
                 let bw = px(30.0);
                 let dz = Rect::from_min_size(
@@ -413,7 +413,7 @@ fn delete_modal(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 Align2::LEFT_TOP,
                 "This permanently deletes the backup zip.",
                 FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-                theme::INK_DIM,
+                theme::ink_dim(),
             );
             let bw = px(150.0);
             let by = d.bottom() - px(26.0) - px(40.0);

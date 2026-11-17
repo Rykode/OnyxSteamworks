@@ -69,7 +69,7 @@ pub fn dropdown(
     painter.rect_filled(
         rect,
         theme::corner(radius),
-        theme::lerp_color(theme::FIELD, theme::FIELD_HI, hover),
+        theme::lerp_color(theme::field(), theme::field_hi(), hover),
     );
     painter.rect_stroke(
         rect,
@@ -77,9 +77,9 @@ pub fn dropdown(
         Stroke::new(
             1.0,
             if open {
-                theme::with_alpha(theme::ACCENT, 200)
+                theme::with_alpha(theme::accent(), 200)
             } else {
-                theme::FIELD_EDGE
+                theme::field_edge()
             },
         ),
         StrokeKind::Inside,
@@ -89,7 +89,7 @@ pub fn dropdown(
             painter,
             rect.expand(2.0),
             radius + 2.0,
-            theme::with_alpha(theme::FOCUS, 180),
+            theme::with_alpha(theme::focus(), 180),
         );
     }
     painter.text(
@@ -97,14 +97,14 @@ pub fn dropdown(
         Align2::LEFT_CENTER,
         current,
         FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-        theme::INK,
+        theme::ink(),
     );
     painter.text(
         Pos2::new(rect.right() - px(16.0), rect.center().y),
         Align2::CENTER_CENTER,
         theme::icon::CARET_DOWN.to_string(),
         theme::icon_font(px(12.0), false),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
 
     let t = anim::anim_bool(&ctx, id.with("anim"), open, 0.13, anim::ease_out_cubic);
@@ -123,12 +123,12 @@ pub fn dropdown(
                 ui.painter().rect_filled(
                     prect,
                     theme::corner(px(theme::RADIUS_POPUP)),
-                    theme::SURFACE_2,
+                    theme::surface_2(),
                 );
                 ui.painter().rect_stroke(
                     prect,
                     theme::corner(px(theme::RADIUS_POPUP)),
-                    Stroke::new(1.0, theme::LINE),
+                    Stroke::new(1.0, theme::line()),
                     StrokeKind::Inside,
                 );
                 let inner = prect.shrink(px(5.0));
@@ -159,7 +159,7 @@ pub fn dropdown(
                             ui.painter().rect_filled(
                                 rr,
                                 theme::corner(px(theme::RADIUS_FIELD) - px(1.0)),
-                                theme::lerp_color(theme::SURFACE_2, theme::FIELD_HI, hov),
+                                theme::lerp_color(theme::surface_2(), theme::field_hi(), hov),
                             );
                             let on = i == *selected;
                             if on {
@@ -168,7 +168,7 @@ pub fn dropdown(
                                     Align2::RIGHT_CENTER,
                                     theme::icon::CHECK.to_string(),
                                     theme::icon_font(px(12.0), false),
-                                    theme::INK_DIM,
+                                    theme::ink_dim(),
                                 );
                             }
                             ui.painter().text(
@@ -176,7 +176,7 @@ pub fn dropdown(
                                 Align2::LEFT_CENTER,
                                 *opt,
                                 FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-                                if on { theme::INK } else { theme::INK_DIM },
+                                if on { theme::ink() } else { theme::ink_dim() },
                             );
                             if r.clicked() {
                                 *selected = i;

@@ -59,9 +59,9 @@ impl RunsState {
 
 pub(super) fn outcome_color(outcome: RunOutcome) -> Color32 {
     match outcome {
-        RunOutcome::Completed => theme::SUCCESS,
-        RunOutcome::Failed => theme::DANGER,
-        RunOutcome::Cancelled => theme::WARNING,
+        RunOutcome::Completed => theme::success(),
+        RunOutcome::Failed => theme::danger(),
+        RunOutcome::Cancelled => theme::warning(),
     }
 }
 
@@ -140,9 +140,9 @@ fn run_list(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     anim::ease_out_cubic,
                 );
                 let fill = if on {
-                    theme::FIELD_HI
+                    theme::field_hi()
                 } else {
-                    theme::with_alpha(theme::FIELD, (hover * 255.0) as u8)
+                    theme::with_alpha(theme::field(), (hover * 255.0) as u8)
                 };
                 ui.painter()
                     .rect_filled(row, theme::corner(px(theme::RADIUS_FIELD)), fill);
@@ -154,28 +154,28 @@ fn run_list(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     Align2::LEFT_CENTER,
                     &run.pipeline_name,
                     FontId::new(theme::text_px(13.0, s), theme::family_semibold()),
-                    theme::INK,
+                    theme::ink(),
                 );
                 ui.painter().text(
                     Pos2::new(row.left() + px(30.0), row.top() + px(40.0)),
                     Align2::LEFT_CENTER,
                     &run.project_name,
                     FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-                    theme::INK_MUTED,
+                    theme::ink_muted(),
                 );
                 ui.painter().text(
                     Pos2::new(row.right() - px(12.0), row.top() + px(20.0)),
                     Align2::RIGHT_CENTER,
                     rel_time(run.started_ms),
                     FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-                    theme::INK_MUTED,
+                    theme::ink_muted(),
                 );
                 ui.painter().text(
                     Pos2::new(row.right() - px(12.0), row.top() + px(40.0)),
                     Align2::RIGHT_CENTER,
                     fmt_duration(run.duration_ms),
                     FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-                    theme::INK_FAINT,
+                    theme::ink_faint(),
                 );
                 if resp.clicked() {
                     clicked = Some(i);
@@ -196,8 +196,8 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
     kit::bordered(
         &ui.painter().clone(),
         rect,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_CARD),
     );
     let x = rect.left() + px(20.0);
@@ -207,7 +207,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Align2::LEFT_TOP,
         &run.pipeline_name,
         FontId::new(theme::text_px(16.0, s), theme::family_semibold()),
-        theme::INK,
+        theme::ink(),
     );
     let summary = format!(
         "{}  ·  {}  ·  {}",
@@ -220,7 +220,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Align2::LEFT_TOP,
         summary,
         FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     let badge_font = FontId::new(theme::text_px(12.0, s), theme::family_semibold());
     let label = outcome_label(run.outcome);
@@ -282,7 +282,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             ui.painter().rect_filled(
                 row,
                 theme::corner(px(theme::RADIUS_FIELD)),
-                if on { theme::FIELD_HI } else { theme::FIELD },
+                if on { theme::field_hi() } else { theme::field() },
             );
         }
         timeline::status_icon(
@@ -297,9 +297,9 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             &step.name,
             FontId::new(theme::text_px(13.0, s), theme::family_medium()),
             if step.outcome == StepOutcome::NotRun {
-                theme::INK_FAINT
+                theme::ink_faint()
             } else {
-                theme::INK
+                theme::ink()
             },
         );
         let right = if step.outcome == StepOutcome::NotRun {
@@ -312,7 +312,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             Align2::RIGHT_CENTER,
             right,
             FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-            theme::INK_MUTED,
+            theme::ink_muted(),
         );
         if step.kind.label() != step.name {
             ui.painter().text(
@@ -320,7 +320,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 Align2::RIGHT_CENTER,
                 step.kind.label(),
                 FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-                theme::INK_FAINT,
+                theme::ink_faint(),
             );
         }
         if resp.clicked() {
@@ -339,8 +339,8 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
     kit::bordered(
         &ui.painter().clone(),
         log_rect,
-        theme::BG,
-        theme::LINE_SOFT,
+        theme::bg(),
+        theme::line_soft(),
         px(theme::RADIUS_FIELD),
     );
     let step = app.runs_ui.step.and_then(|i| run.steps.get(i));
@@ -352,7 +352,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Align2::LEFT_TOP,
         title,
         FontId::new(theme::text_px(12.0, s), theme::family_label()),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     let inner = Rect::from_min_max(
         Pos2::new(log_rect.left() + px(12.0), log_rect.top() + px(34.0)),
@@ -372,7 +372,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 ui.label(
                     egui::RichText::new("This step produced no output.")
                         .font(FontId::new(theme::text_px(12.0, s), theme::family_medium()))
-                        .color(theme::INK_MUTED),
+                        .color(theme::ink_muted()),
                 );
             }
             for line in &step.log {
@@ -380,7 +380,7 @@ fn run_detail(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     egui::RichText::new(line)
                         .monospace()
                         .size(px(11.5))
-                        .color(theme::INK_DIM),
+                        .color(theme::ink_dim()),
                 );
             }
         });

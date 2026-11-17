@@ -49,8 +49,8 @@ fn approvals_banner(app: &mut App, ui: &mut egui::Ui, body: Rect, s: f32) -> Rec
         kit::bordered(
             &ui.painter().clone(),
             row,
-            theme::with_alpha(theme::WARNING, 18),
-            theme::with_alpha(theme::WARNING, 120),
+            theme::with_alpha(theme::warning(), 18),
+            theme::with_alpha(theme::warning(), 120),
             px(theme::RADIUS_FIELD),
         );
         ui.painter().text(
@@ -61,7 +61,7 @@ fn approvals_banner(app: &mut App, ui: &mut egui::Ui, body: Rect, s: f32) -> Rec
                 a.pipeline_name, a.project_name
             ),
             FontId::new(theme::text_px(13.0, s), theme::family_semibold()),
-            theme::INK,
+            theme::ink(),
         );
         let detail = if a.message.is_empty() {
             format!("Requested {} by a background run", rel_time(a.requested_ms))
@@ -73,7 +73,7 @@ fn approvals_banner(app: &mut App, ui: &mut egui::Ui, body: Rect, s: f32) -> Rec
             Align2::LEFT_CENTER,
             detail,
             FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-            theme::INK_MUTED,
+            theme::ink_muted(),
         );
         let approve = Rect::from_min_size(
             Pos2::new(row.right() - px(118.0), row.top() + px(9.0)),

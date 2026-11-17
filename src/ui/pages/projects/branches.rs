@@ -10,9 +10,9 @@ use crate::ui::theme;
 
 pub(crate) fn level_style(level: BranchLevel) -> (&'static str, Color32) {
     match level {
-        BranchLevel::Dev => ("Dev", theme::ACCENT_HI),
-        BranchLevel::Beta => ("Beta", theme::WARNING),
-        BranchLevel::Live => ("Live", theme::DANGER),
+        BranchLevel::Dev => ("Dev", theme::accent_hi()),
+        BranchLevel::Beta => ("Beta", theme::warning()),
+        BranchLevel::Live => ("Live", theme::danger()),
     }
 }
 
@@ -52,9 +52,9 @@ pub(super) fn row(
         .on_hover_cursor(egui::CursorIcon::PointingHand);
     crate::ui::kit::accessible(&resp, r, egui::Role::Button, &format!("Edit branch {}", b.name), None, px(theme::RADIUS_FIELD));
     let fill = if resp.hovered() {
-        theme::FIELD_HI
+        theme::field_hi()
     } else {
-        theme::FIELD
+        theme::field()
     };
     ui.painter().rect_filled(r, theme::corner(px(10.0)), fill);
     let (label, color) = level_style(b.level);
@@ -73,7 +73,7 @@ pub(super) fn row(
         Align2::LEFT_CENTER,
         name,
         FontId::new(theme::text_px(14.0, s), theme::family_medium()),
-        theme::INK,
+        theme::ink(),
     );
     let live = app
         .projects_ui
@@ -94,7 +94,7 @@ pub(super) fn row(
         Align2::RIGHT_CENTER,
         note,
         FontId::new(theme::text_px(12.5, s), egui::FontFamily::Monospace),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     resp.clicked()
 }
@@ -125,7 +125,7 @@ pub(super) fn modal(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 Align2::LEFT_CENTER,
                 "Edit branch",
                 FontId::new(theme::text_px(15.0, s), theme::family_semibold()),
-                theme::INK,
+                theme::ink(),
             );
             kit::label(ui.painter(), Pos2::new(x, d.top() + px(58.0)), "Name", s);
             Input::new(&mut app.projects_ui.base.branches[i].name)
@@ -159,9 +159,9 @@ pub(super) fn modal(app: &mut App, ui: &mut egui::Ui, s: f32) {
                 app.projects_ui.base.set_live_branch = if live { name.clone() } else { String::new() };
             }
             let (text, color) = if live && name.eq_ignore_ascii_case("default") {
-                ("SteamCMD cannot set the default branch live", theme::DANGER)
+                ("SteamCMD cannot set the default branch live", theme::danger())
             } else {
-                ("Set this branch live after upload", theme::INK_DIM)
+                ("Set this branch live after upload", theme::ink_dim())
             };
             ui.painter().text(
                 Pos2::new(tog.right() + px(12.0), tog.center().y),

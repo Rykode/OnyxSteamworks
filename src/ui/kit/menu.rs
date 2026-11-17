@@ -79,7 +79,7 @@ pub fn menu(
         .show(&ctx, |ui| {
             let rect = Rect::from_min_size(origin, Vec2::new(width, h));
             theme::shadow(ui.painter(), rect, px(theme::RADIUS_POPUP), 24, 140);
-            super::bordered(ui.painter(), rect, theme::SURFACE_2, theme::LINE, px(theme::RADIUS_POPUP));
+            super::bordered(ui.painter(), rect, theme::surface_2(), theme::line(), px(theme::RADIUS_POPUP));
             if let Some(title) = title {
                 super::label(
                     ui.painter(),
@@ -105,7 +105,7 @@ pub fn menu(
                         px(theme::RADIUS_FIELD),
                     );
                     if row.hovered() || row.has_focus() {
-                        ui.painter().rect_filled(r, theme::corner(px(theme::RADIUS_FIELD)), theme::FIELD);
+                        ui.painter().rect_filled(r, theme::corner(px(theme::RADIUS_FIELD)), theme::field());
                     }
                 } else {
                     row.widget_info(|| egui::WidgetInfo::labeled(egui::Role::MenuItem, false, item.label));
@@ -118,7 +118,7 @@ pub fn menu(
                             Align2::LEFT_CENTER,
                             glyph.to_string(),
                             theme::icon_font(px(14.0), false),
-                            if item.enabled { theme::INK_MUTED } else { theme::INK_FAINT },
+                            if item.enabled { theme::ink_muted() } else { theme::ink_faint() },
                         );
                     }
                     text_x += px(22.0);
@@ -128,7 +128,7 @@ pub fn menu(
                     Align2::LEFT_CENTER,
                     item.label,
                     FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-                    if item.enabled { theme::INK } else { theme::INK_FAINT },
+                    if item.enabled { theme::ink() } else { theme::ink_faint() },
                 );
                 if item.checked {
                     ui.painter().text(
@@ -136,7 +136,7 @@ pub fn menu(
                         Align2::RIGHT_CENTER,
                         theme::icon::CHECK.to_string(),
                         theme::icon_font(px(13.0), false),
-                        theme::SUCCESS,
+                        theme::success(),
                     );
                 }
                 if item.enabled && row.clicked() {

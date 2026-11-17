@@ -90,8 +90,8 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
             kit::bordered(
                 &painter,
                 settings,
-                theme::FIELD,
-                theme::LINE,
+                theme::field(),
+                theme::line(),
                 px(theme::RADIUS_FIELD),
             );
             let lines = settings_lines(&rec, parsed.as_ref());
@@ -102,14 +102,14 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
                     Align2::LEFT_TOP,
                     k,
                     FontId::new(theme::text_px(11.5, s), theme::family_label()),
-                    theme::INK_MUTED,
+                    theme::ink_muted(),
                 );
                 painter.text(
                     Pos2::new(settings.left() + px(140.0), y),
                     Align2::LEFT_TOP,
                     v,
                     FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-                    theme::INK_DIM,
+                    theme::ink_dim(),
                 );
             }
 
@@ -121,8 +121,8 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
             kit::bordered(
                 &painter,
                 log_rect,
-                theme::BG,
-                theme::LINE,
+                theme::bg(),
+                theme::line(),
                 px(theme::RADIUS_FIELD),
             );
             let inner = log_rect.shrink(px(12.0));
@@ -136,7 +136,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
                         ui.label(
                             egui::RichText::new("Log file is empty or missing.")
                                 .font(FontId::new(theme::text_px(12.0, s), theme::family_medium()))
-                                .color(theme::INK_MUTED),
+                                .color(theme::ink_muted()),
                         );
                     }
                     for line in log.lines() {
@@ -144,7 +144,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
                             egui::RichText::new(line)
                                 .monospace()
                                 .size(px(12.0))
-                                .color(theme::INK_DIM),
+                                .color(theme::ink_dim()),
                         );
                     }
                 });
@@ -198,39 +198,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, s: f32, ctx: &egui::Context
     );
 
     if rebuild {
-        if let Some(project) = parsed {
-            if let Some(idx) = app.projects.iter().position(|p| p.id == project.id) {
-                if app.build_ui.running {
-                    app.toasts
-                        .push(kit::ToastLevel::Warning, "A build is already running");
-                } else {
-                    app.build_ui.project_sel = idx;
-                    app.build_ui.branch_sel = project
-                        .branches
-                        .iter()
-                        .position(|b| b.name == rec.branch)
-                        .unwrap_or(0);
-                    app.build_ui.description = rec.description.clone();
-                    match crate::ui::pages::build::guard::launch(
-                        app,
-                        &rec.branch,
-                        Some(project),
-                        ctx,
-                    ) {
-                        Ok(()) => app
-                            .toasts
-                            .push(kit::ToastLevel::Success, "Rebuilding with saved settings"),
-                        Err(e) => app.toasts.push(kit::ToastLevel::Error, e),
-                    }
-                }
-            } else {
-                app.toasts
-                    .push(kit::ToastLevel::Error, "That project no longer exists");
-            }
-        } else {
-            app.toasts
-                .push(kit::ToastLevel::Error, "Stored settings are unreadable");
-        }
+        crate::ui::pages::build::rebuild(app, &rec, ctx);
         app.history_ui.close_detail();
     } else if delete {
         app.history_ui.confirm_delete = true;

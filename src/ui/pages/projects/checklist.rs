@@ -24,7 +24,7 @@ pub(super) fn card(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
         Pos2::new(count.left() - px(14.0), count.center().y),
         Align2::RIGHT_CENTER,
         if editing { "Done" } else { "Edit" },
-        if editing { theme::ACCENT_HI } else { theme::INK_FAINT },
+        if editing { theme::accent_hi() } else { theme::ink_faint() },
         s,
     )
     .clicked()
@@ -63,7 +63,7 @@ fn view_list(app: &mut App, ui: &mut egui::Ui, s: f32) {
             Align2::LEFT_CENTER,
             "No items yet.",
             FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-            theme::INK_FAINT,
+            theme::ink_faint(),
         );
         let r = row(ui, s, 24.0);
         if kit::link(
@@ -71,7 +71,7 @@ fn view_list(app: &mut App, ui: &mut egui::Ui, s: f32) {
             Pos2::new(r.left(), r.center().y),
             Align2::LEFT_CENTER,
             "Load the default template",
-            theme::ACCENT_HI,
+            theme::accent_hi(),
             s,
         )
         .clicked()
@@ -89,7 +89,7 @@ fn view_list(app: &mut App, ui: &mut egui::Ui, s: f32) {
         if kit::checkbox(ui, hit, &mut done, &item.text, s).changed() {
             item.done = done;
         }
-        let color = if item.done { theme::INK_MUTED } else { theme::INK_DIM };
+        let color = if item.done { theme::ink_muted() } else { theme::ink_dim() };
         let text_rect = ui.painter().text(
             Pos2::new(r.left() + px(29.0), r.center().y),
             Align2::LEFT_CENTER,
@@ -179,6 +179,6 @@ fn edit_list(app: &mut App, ui: &mut egui::Ui, s: f32) {
         Align2::LEFT_CENTER,
         "Reset after each Live build",
         FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
 }

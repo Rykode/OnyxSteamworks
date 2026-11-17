@@ -8,10 +8,10 @@ use crate::validate::human_size;
 
 fn status_color(status: DiffStatus) -> Color32 {
     match status {
-        DiffStatus::Added => theme::SUCCESS,
-        DiffStatus::Modified => theme::WARNING,
-        DiffStatus::Removed => theme::DANGER,
-        DiffStatus::Unchanged => theme::INK_MUTED,
+        DiffStatus::Added => theme::success(),
+        DiffStatus::Modified => theme::warning(),
+        DiffStatus::Removed => theme::danger(),
+        DiffStatus::Unchanged => theme::ink_muted(),
     }
 }
 
@@ -28,7 +28,7 @@ pub(super) fn progress(ui: &mut egui::Ui, d: Rect, done: usize, total: usize, s:
         Align2::LEFT_CENTER,
         msg,
         FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
     let bar = Rect::from_min_size(
         Pos2::new(x, d.center().y + px(6.0)),
@@ -83,27 +83,53 @@ pub(super) fn summary_row(ui: &egui::Ui, pos: Pos2, w: f32, summary: &DiffSummar
             Align2::LEFT_CENTER,
             format!("{label}  {count}"),
             FontId::new(theme::text_px(13.0, s), theme::family_semibold()),
-            theme::INK,
+            theme::ink(),
         );
         ui.painter().text(
             Pos2::new(cx + px(16.0), pos.y + px(18.0)),
             Align2::LEFT_CENTER,
             human_size(*bytes),
             FontId::new(theme::text_px(11.5, s), theme::family_medium()),
-            theme::INK_MUTED,
+            theme::ink_muted(),
         );
     }
     ui.painter().text(
         Pos2::new(pos.x + w, pos.y + px(40.0)),
         Align2::RIGHT_CENTER,
-        format!(
-            "{} changed · ~{} to upload (estimate)",
-            summary.changed(),
-            human_size(summary.estimated_upload())
-        ),
+        {
+            let bytes = summary.estimated_upload();
+            let bps = crate::config::load_settings().map(|c| c.upload_bps).unwrap_or(0);
+            match eta(bytes, bps) {
+                Some(eta) => format!(
+                    "{} changed · ~{} to upload · about {eta} at your last speed",
+                    summary.changed(),
+                    human_size(bytes)
+                ),
+                None => format!(
+                    "{} changed · ~{} to upload (estimate)",
+                    summary.changed(),
+                    human_size(bytes)
+                ),
+            }
+        },
         FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
+}
+
+/// Rough upload time for `bytes` at `bps`, rounded for display.
+fn eta(bytes: u64, bps: u64) -> Option<String> {
+    if bps == 0 || bytes == 0 {
+        return None;
+    }
+    let secs = bytes / bps;
+    Some(if secs < 60 {
+        "under a minute".to_string()
+    } else if secs < 3600 {
+        format!("{} min", secs.div_ceil(60))
+    } else {
+        format!("{}h {:02}m", secs / 3600, (secs % 3600) / 60)
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -212,13 +238,13 @@ fn row(ui: &mut egui::Ui, entry: &manifest::DiffEntry, s: f32) {
         Align2::LEFT_CENTER,
         &entry.path,
         FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-        theme::INK,
+        theme::ink(),
     );
     ui.painter().text(
         Pos2::new(r.right() - px(6.0), r.center().y),
         Align2::RIGHT_CENTER,
         human_size(entry.size),
         FontId::new(theme::text_px(11.5, s), egui::FontFamily::Monospace),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
 }

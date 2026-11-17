@@ -200,8 +200,8 @@ fn editor(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
     kit::bordered(
         &ui.painter().clone(),
         rect,
-        theme::FIELD,
-        theme::LINE,
+        theme::field(),
+        theme::line(),
         px(theme::RADIUS_FIELD),
     );
     kit::label(
@@ -226,7 +226,7 @@ fn editor(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     .frame(Frame::NONE)
                     .hint_text("Generate a draft or write notes here...")
                     .font(FontId::new(theme::text_px(12.5, s), theme::family_medium()))
-                    .text_color(theme::INK)
+                    .text_color(theme::ink())
                     .desired_width(f32::INFINITY)
                     .desired_rows(14),
             );
@@ -238,8 +238,8 @@ fn preview(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
     kit::bordered(
         &ui.painter().clone(),
         rect,
-        theme::BG,
-        theme::LINE,
+        theme::bg(),
+        theme::line(),
         px(theme::RADIUS_FIELD),
     );
     kit::label(
@@ -264,7 +264,7 @@ fn preview(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 ui.label(
                     egui::RichText::new("Nothing to preview yet.")
                         .font(FontId::new(theme::text_px(12.0, s), theme::family_medium()))
-                        .color(theme::INK_MUTED),
+                        .color(theme::ink_muted()),
                 );
             } else {
                 for line in text.lines() {
@@ -272,7 +272,7 @@ fn preview(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                         egui::RichText::new(line)
                             .monospace()
                             .size(px(11.5))
-                            .color(theme::INK_DIM),
+                            .color(theme::ink_dim()),
                     );
                 }
             }

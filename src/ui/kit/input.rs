@@ -104,7 +104,7 @@ impl<'a> Input<'a> {
             0.0
         };
         let field = rect;
-        let fill = theme::lerp_color(theme::SURFACE_2, theme::DANGER, flash * 0.12);
+        let fill = theme::lerp_color(theme::surface_2(), theme::danger(), flash * 0.12);
 
         kit::surface(&ui.painter().clone(), field, fill, radius);
 
@@ -121,7 +121,7 @@ impl<'a> Input<'a> {
                 Align2::CENTER_CENTER,
                 glyph.to_string(),
                 theme::icon_font(px(13.0), false),
-                theme::INK_FAINT,
+                theme::ink_faint(),
             );
         }
         let font = if self.mono {
@@ -138,9 +138,9 @@ impl<'a> Input<'a> {
                 self.text.as_str()
             };
             let color = if self.text.is_empty() {
-                theme::INK_FAINT
+                theme::ink_faint()
             } else {
-                theme::INK_DIM
+                theme::ink_dim()
             };
             let text = tail_fit(painter, shown, &font, inner.width());
             let clipped = text != shown;
@@ -167,9 +167,9 @@ impl<'a> Input<'a> {
                     .margin(egui::Margin::ZERO)
                     .align(Align2::LEFT_CENTER)
                     .password(self.mask)
-                    .hint_text(egui::RichText::new(self.hint).font(font.clone()).color(theme::INK_FAINT))
+                    .hint_text(egui::RichText::new(self.hint).font(font.clone()).color(theme::ink_faint()))
                     .font(font)
-                    .text_color(theme::INK)
+                    .text_color(theme::ink())
                     .desired_width(f32::INFINITY),
             )
         };
@@ -180,20 +180,20 @@ impl<'a> Input<'a> {
         }
 
         let border = if self.error {
-            theme::DANGER
+            theme::danger()
         } else if resp.has_focus() {
-            theme::ACCENT
+            theme::accent()
         } else if resp.hovered() {
-            theme::INK_FAINT
+            theme::ink_faint()
         } else {
-            theme::FIELD_EDGE
+            theme::field_edge()
         };
         let width = if self.error { 1.0 + flash * 0.75 } else { 1.0 };
         if resp.has_focus() && !self.error {
             ui.painter().rect_stroke(
                 field.expand(2.0),
                 theme::corner(radius + 2.0),
-                Stroke::new(2.0, theme::with_alpha(theme::ACCENT, 60)),
+                Stroke::new(2.0, theme::with_alpha(theme::accent(), 60)),
                 StrokeKind::Inside,
             );
         }
@@ -206,9 +206,9 @@ impl<'a> Input<'a> {
 
         if let Some(helper) = self.helper {
             let color = if self.error {
-                theme::DANGER
+                theme::danger()
             } else {
-                theme::INK_MUTED
+                theme::ink_muted()
             };
             ui.painter().text(
                 Pos2::new(field.left() + px(2.0), field.bottom() + px(5.0)),
@@ -225,7 +225,7 @@ impl<'a> Input<'a> {
 pub(crate) fn head_fit(painter: &egui::Painter, text: &str, font: &FontId, max_w: f32) -> String {
     let width = |t: &str| {
         painter
-            .layout_no_wrap(t.to_owned(), font.clone(), theme::INK)
+            .layout_no_wrap(t.to_owned(), font.clone(), theme::ink())
             .size()
             .x
     };
@@ -250,7 +250,7 @@ pub(crate) fn head_fit(painter: &egui::Painter, text: &str, font: &FontId, max_w
 pub(crate) fn tail_fit(painter: &egui::Painter, text: &str, font: &FontId, max_w: f32) -> String {
     let width = |t: &str| {
         painter
-            .layout_no_wrap(t.to_owned(), font.clone(), theme::INK)
+            .layout_no_wrap(t.to_owned(), font.clone(), theme::ink())
             .size()
             .x
     };

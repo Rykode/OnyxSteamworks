@@ -49,11 +49,11 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, s: f32) {
             let galley = ui.painter().layout(
                 secrets::BUILD_ACCOUNT_NOTE.to_string(),
                 note_font,
-                theme::INK_MUTED,
+                theme::ink_muted(),
                 d.width() - px(52.0),
             );
             ui.painter()
-                .galley(Pos2::new(x, d.top() + px(52.0)), galley, theme::INK_MUTED);
+                .galley(Pos2::new(x, d.top() + px(52.0)), galley, theme::ink_muted());
 
             let field = Rect::from_min_size(
                 Pos2::new(x, d.bottom() - px(118.0)),

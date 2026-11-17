@@ -103,8 +103,8 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
     kit::bordered(
         &ui.painter().clone(),
         rect,
-        theme::SURFACE_2,
-        theme::LINE,
+        theme::surface_2(),
+        theme::line(),
         px(theme::RADIUS_CARD),
     );
 
@@ -116,7 +116,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
                 Pos2::new(icon_c.x, rect.bottom() - px(6.0)),
                 Pos2::new(icon_c.x, rect.bottom() + px(10.0)),
             ],
-            Stroke::new(1.0, theme::LINE),
+            Stroke::new(1.0, theme::line()),
         );
     }
 
@@ -132,7 +132,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
         Align2::LEFT_CENTER,
         &name,
         FontId::new(theme::text_px(13.5, s), theme::family_semibold()),
-        theme::INK,
+        theme::ink(),
     );
     if !same {
         ui.painter().text(
@@ -140,7 +140,7 @@ fn card_row(app: &mut App, ui: &mut egui::Ui, i: usize, count: usize, s: f32) ->
             Align2::LEFT_CENTER,
             &detail,
             FontId::new(theme::text_px(11.5, s), theme::family_medium()),
-            theme::INK_MUTED,
+            theme::ink_muted(),
         );
     }
 
@@ -242,28 +242,28 @@ pub(super) fn status_icon(ui: &mut egui::Ui, c: Pos2, r: f32, status: StepRunSta
     let painter = ui.painter();
     match status {
         StepRunStatus::Idle | StepRunStatus::Pending => {
-            painter.circle_stroke(c, r, Stroke::new(1.5, theme::INK_MUTED));
+            painter.circle_stroke(c, r, Stroke::new(1.5, theme::ink_muted()));
         }
         StepRunStatus::Running => {
-            painter.circle_filled(c, r, theme::INK);
+            painter.circle_filled(c, r, theme::ink());
             painter.circle_stroke(
                 c,
                 r + 2.5,
-                Stroke::new(1.0, theme::with_alpha(theme::INK, 80)),
+                Stroke::new(1.0, theme::with_alpha(theme::ink(), 80)),
             );
         }
         StepRunStatus::Success => {
-            painter.circle_filled(c, r, theme::SUCCESS);
-            check(painter, c, r, theme::PRIMARY_INK);
+            painter.circle_filled(c, r, theme::success());
+            check(painter, c, r, theme::primary_ink());
         }
         StepRunStatus::Failed => {
-            painter.circle_filled(c, r, theme::DANGER);
-            cross(painter, c, r * 0.5, theme::PRIMARY_INK);
+            painter.circle_filled(c, r, theme::danger());
+            cross(painter, c, r * 0.5, theme::primary_ink());
         }
         StepRunStatus::Skipped => {
             painter.line_segment(
                 [Pos2::new(c.x - r, c.y), Pos2::new(c.x + r, c.y)],
-                Stroke::new(1.5, theme::INK_MUTED),
+                Stroke::new(1.5, theme::ink_muted()),
             );
         }
     }

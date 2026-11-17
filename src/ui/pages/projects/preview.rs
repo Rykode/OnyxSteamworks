@@ -37,8 +37,8 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &e
     kit::bordered(
         &ui.painter().clone(),
         block,
-        theme::BG,
-        theme::LINE,
+        theme::bg(),
+        theme::line(),
         px(theme::RADIUS_CARD),
     );
     let inner = block.shrink(px(16.0));
@@ -52,7 +52,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &e
                     egui::RichText::new(line)
                         .monospace()
                         .size(px(12.0))
-                        .color(theme::INK_DIM),
+                        .color(theme::ink_dim()),
                 );
             }
             if content.is_empty() {
@@ -61,7 +61,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &e
                     Align2::CENTER_CENTER,
                     "No depots to preview",
                     FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-                    theme::INK_MUTED,
+                    theme::ink_muted(),
                 );
             }
         });

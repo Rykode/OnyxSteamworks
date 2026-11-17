@@ -123,14 +123,15 @@ mod win {
         nid
     }
 
-    fn add_icon(hwnd: HWND) {
+    fn add_icon(hwnd: HWND) -> bool {
         let icon = STATE.with(|st| st.borrow().as_ref().map(|s| s.icon));
-        if let Some(icon) = icon {
-            let nid = icon_data(hwnd, icon);
-            // SAFETY: `nid` is fully initialised and outlives the call.
-            unsafe {
-                Shell_NotifyIconW(NIM_ADD, &nid);
+        match icon {
+            Some(icon) if !icon.is_null() => {
+                let nid = icon_data(hwnd, icon);
+                // SAFETY: `nid` is fully initialised and outlives the call.
+                unsafe { Shell_NotifyIconW(NIM_ADD, &nid) != 0 }
             }
+            _ => false,
         }
     }
 
@@ -202,7 +203,7 @@ mod win {
             }
             // Explorer restarted: the notification area forgot our icon.
             m if m != 0 && m == taskbar_created => {
-                add_icon(hwnd);
+                let _ = add_icon(hwnd);
                 0
             }
             // SAFETY: default handling for everything else.
@@ -274,10 +275,16 @@ mod win {
                 std::ptr::null(),
             );
             if hwnd.is_null() {
+                // No icon means no way back: show the main window again.
+                send(TrayEvent::Show);
+                STATE.with(|st| *st.borrow_mut() = None);
                 return;
             }
             slot.store(hwnd as isize, Ordering::SeqCst);
-            add_icon(hwnd);
+            if !add_icon(hwnd) {
+                send(TrayEvent::Show);
+                DestroyWindow(hwnd);
+            }
             let mut msg: MSG = std::mem::zeroed();
             while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
                 TranslateMessage(&msg);

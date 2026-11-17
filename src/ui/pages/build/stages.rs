@@ -36,7 +36,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
         let cy = card.top() + px(65.0 + 48.4 * i as f32);
         if i > 0 {
             let sy = cy - px(24.2);
-            painter.line_segment([Pos2::new(x0, sy), Pos2::new(x1, sy)], Stroke::new(1.0, theme::LINE_SOFT));
+            painter.line_segment([Pos2::new(x0, sy), Pos2::new(x1, sy)], Stroke::new(1.0, theme::line_soft()));
         }
         let c = Pos2::new(x0 + px(11.7), cy);
         let r = px(11.7);
@@ -44,18 +44,18 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
         let is_failed = failed_at == Some(i);
         let done = !is_current && !is_failed && i < filled;
         let (fill, glyph, ink) = if is_failed {
-            (theme::with_alpha(theme::DANGER, 40), theme::icon::X, theme::DANGER)
+            (theme::with_alpha(theme::danger(), 40), theme::icon::X, theme::danger())
         } else if is_current {
-            painter.circle_stroke(c, r + px(2.5), Stroke::new(px(2.0), theme::with_alpha(theme::ACCENT, 70)));
-            (theme::ACCENT, stage_glyph(*stage), theme::PRIMARY_INK)
+            painter.circle_stroke(c, r + px(2.5), Stroke::new(px(2.0), theme::with_alpha(theme::accent(), 70)));
+            (theme::accent(), stage_glyph(*stage), theme::primary_ink())
         } else if done {
-            (theme::with_alpha(theme::SUCCESS, 34), theme::icon::CHECK, theme::SUCCESS)
+            (theme::with_alpha(theme::success(), 34), theme::icon::CHECK, theme::success())
         } else {
-            (theme::FIELD_HI, theme::icon::PACKAGE, theme::INK_FAINT)
+            (theme::field_hi(), theme::icon::PACKAGE, theme::ink_faint())
         };
         painter.circle_filled(c, r, fill);
         painter.text(c, Align2::CENTER_CENTER, glyph.to_string(), theme::icon_font(px(11.5), false), ink);
-        let text_color = if done || is_current || is_failed { theme::INK } else { theme::INK_FAINT };
+        let text_color = if done || is_current || is_failed { theme::ink() } else { theme::ink_faint() };
         painter.text(
             Pos2::new(x0 + px(37.5), cy),
             Align2::LEFT_CENTER,
@@ -72,11 +72,11 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) {
             })
             .unwrap_or_else(|| "--:--".to_string());
         let time_color = if is_current {
-            theme::ACCENT_HI
+            theme::accent_hi()
         } else if done || is_failed {
-            theme::INK_FAINT
+            theme::ink_faint()
         } else {
-            theme::with_alpha(theme::INK_FAINT, 150)
+            theme::with_alpha(theme::ink_faint(), 150)
         };
         let state_word = if is_failed {
             "failed"
@@ -144,14 +144,14 @@ pub(super) fn speed_card(app: &App, ui: &mut egui::Ui, card: Rect, project: &Pro
         Align2::LEFT_CENTER,
         value,
         FontId::new(theme::text_px(37.0, s), theme::family_bold()),
-        theme::INK,
+        theme::ink(),
     );
     painter.text(
         Pos2::new(big.right() + px(5.0), big.bottom() - px(7.0)),
         Align2::LEFT_BOTTOM,
         unit,
         FontId::new(theme::text_px(14.0, s), theme::family_medium()),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     let eta = st
         .speed
@@ -163,7 +163,7 @@ pub(super) fn speed_card(app: &App, ui: &mut egui::Ui, card: Rect, project: &Pro
         Align2::RIGHT_CENTER,
         eta,
         FontId::new(theme::text_px(13.0, s), egui::FontFamily::Monospace),
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
 
     let chart = Rect::from_min_max(
@@ -176,12 +176,12 @@ pub(super) fn speed_card(app: &App, ui: &mut egui::Ui, card: Rect, project: &Pro
     let id = ui.make_persistent_id("upload_bar");
     let t = crate::ui::anim::anim_value(ui.ctx(), id, st.progress.clamp(0.0, 1.0), 0.2);
     let painter = ui.painter();
-    painter.rect_filled(bar, theme::corner(px(3.0)), theme::TRACK);
+    painter.rect_filled(bar, theme::corner(px(3.0)), theme::track());
     if t > 0.001 {
         painter.rect_filled(
             Rect::from_min_size(bar.min, Vec2::new(bar.width() * t, bar.height())),
             theme::corner(px(3.0)),
-            theme::ACCENT,
+            theme::accent(),
         );
     }
     let left = match bytes {
@@ -192,13 +192,13 @@ pub(super) fn speed_card(app: &App, ui: &mut egui::Ui, card: Rect, project: &Pro
         }),
     };
     let mono = FontId::new(theme::text_px(12.5, s), egui::FontFamily::Monospace);
-    painter.text(Pos2::new(x0, card.top() + px(213.0)), Align2::LEFT_CENTER, left, mono.clone(), theme::INK_DIM);
+    painter.text(Pos2::new(x0, card.top() + px(213.0)), Align2::LEFT_CENTER, left, mono.clone(), theme::ink_dim());
     painter.text(
         Pos2::new(x1, card.top() + px(213.0)),
         Align2::RIGHT_CENTER,
         format!("{:.0}%", st.progress * 100.0),
         mono,
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
 }
 
@@ -206,7 +206,7 @@ fn area_chart(painter: &egui::Painter, rect: Rect, samples: &[f32], s: f32) {
     if samples.len() < 2 {
         painter.line_segment(
             [rect.left_bottom(), rect.right_bottom()],
-            Stroke::new(theme::px(1.0, s), theme::LINE_SOFT),
+            Stroke::new(theme::px(1.0, s), theme::line_soft()),
         );
         return;
     }
@@ -223,8 +223,8 @@ fn area_chart(painter: &egui::Painter, rect: Rect, samples: &[f32], s: f32) {
         })
         .collect();
     let mut mesh = egui::Mesh::default();
-    let top = theme::with_alpha(theme::ACCENT, 90);
-    let bottom = theme::with_alpha(theme::ACCENT, 0);
+    let top = theme::with_alpha(theme::accent(), 90);
+    let bottom = theme::with_alpha(theme::accent(), 0);
     for w in pts.windows(2) {
         let base = mesh.vertices.len() as u32;
         mesh.colored_vertex(w[0], top);
@@ -235,7 +235,7 @@ fn area_chart(painter: &egui::Painter, rect: Rect, samples: &[f32], s: f32) {
         mesh.add_triangle(base, base + 2, base + 3);
     }
     painter.add(egui::Shape::mesh(mesh));
-    painter.add(egui::Shape::line(pts, Stroke::new(theme::px(2.0, s), theme::ACCENT_HI)));
+    painter.add(egui::Shape::line(pts, Stroke::new(theme::px(2.0, s), theme::accent_hi())));
 }
 
 pub(super) fn verify_ready(app: &App) -> bool {

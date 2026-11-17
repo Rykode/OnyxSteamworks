@@ -74,6 +74,8 @@ pub struct Settings {
     /// Page and sub-tab the app was on when it last closed.
     pub last_page: u8,
     pub last_sub_tabs: [u8; 5],
+    /// Measured upload throughput of the last real build (bytes/s), for Review's ETA.
+    pub upload_bps: u64,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]

@@ -71,14 +71,14 @@ pub fn registry(projects: &[Project]) -> Vec<Action> {
         "build.start",
         "Start build",
         "run upload deploy",
-        None,
+        Some("Ctrl+Enter"),
         Command::StartBuild,
     ));
     out.push(Action::new(
         "build.preview",
         "Run preview build",
         "dry run test",
-        None,
+        Some("Ctrl+Shift+Enter"),
         Command::PreviewBuild,
     ));
     out.push(Action::new(

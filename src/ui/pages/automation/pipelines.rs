@@ -9,7 +9,7 @@ use crate::ui::kit::{self, Button, ButtonKind, Input};
 use crate::ui::theme;
 
 const VARIABLES: &str =
-    "Variables: {version}  {branch}  {build_number}  {git_commit}  {date}  {time}";
+    "Variables: {version}  {branch}  {build_number}  {git_commit}  {git_tag}  {date}  {time}";
 
 pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &egui::Context) {
     let px = |v: f32| theme::px(v, s);
@@ -188,14 +188,57 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &e
         )
         .clicked()
     {
-        app.pipeline_ui.delete_pipeline();
+        let owner = app.pipeline_ui.draft.id.clone();
+        let at = app.pipeline_ui.pipeline_sel;
+        if let Some(pipe) = app.pipeline_ui.delete_pipeline() {
+            let label = if pipe.name.trim().is_empty() { "pipeline".to_string() } else { pipe.name.clone() };
+            app.offer_undo(format!("Deleted {label}"), move |app| {
+                if app.pipeline_ui.draft.id != owner {
+                    return Err("Can't undo: a different project is open".to_string());
+                }
+                let list = &mut app.pipeline_ui.draft.pipelines;
+                let at = at.min(list.len());
+                list.insert(at, pipe);
+                app.pipeline_ui.choose_pipeline(at);
+                Ok(())
+            });
+        }
+    }
+    // After a failed run, offer to pick up from the first failed step.
+    let failed_at = if !running
+        && app.pipeline_ui.shows_current_run()
+        && app.pipeline_ui.outcome == Some(crate::features::pipeline::PipelineOutcome::Failed)
+    {
+        app.pipeline_ui
+            .statuses
+            .iter()
+            .position(|st| *st == super::state::StepRunStatus::Failed)
+    } else {
+        None
+    };
+    if let Some(i) = failed_at
+        && Button::new("Retry failed step", ButtonKind::Primary)
+            .icon(theme::icon::PLAY)
+            .enabled(!app.scheduler.busy())
+            .disabled_reason("A scheduled run is in progress")
+            .show(
+                ui,
+                Rect::from_min_size(
+                    Pos2::new(rect.right() - px(150.0) - px(10.0) - px(170.0), row2),
+                    Vec2::new(px(170.0), px(36.0)),
+                ),
+                s,
+            )
+            .clicked()
+    {
+        app.pipeline_ui.start(ctx, i);
     }
     ui.painter().text(
         Pos2::new(rect.left(), row2 + px(48.0)),
         Align2::LEFT_CENTER,
         VARIABLES,
         FontId::new(theme::text_px(11.5, s), theme::family_medium()),
-        theme::INK_FAINT,
+        theme::ink_faint(),
     );
 
     let mut top = row2 + px(66.0);
@@ -207,8 +250,8 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &e
         kit::bordered(
             &ui.painter().clone(),
             banner,
-            theme::with_alpha(theme::WARNING, 18),
-            theme::with_alpha(theme::WARNING, 120),
+            theme::with_alpha(theme::warning(), 18),
+            theme::with_alpha(theme::warning(), 120),
             px(theme::RADIUS_FIELD),
         );
         ui.painter().text(
@@ -220,7 +263,7 @@ pub(super) fn show(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &e
                 message
             },
             FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-            theme::INK,
+            theme::ink(),
         );
         if Button::new("Approve", ButtonKind::Primary)
             .icon(theme::icon::CHECK)
@@ -278,8 +321,8 @@ fn run_log(app: &App, ui: &mut egui::Ui, rect: Rect, s: f32) {
     kit::bordered(
         &ui.painter().clone(),
         rect,
-        theme::BG,
-        theme::LINE,
+        theme::bg(),
+        theme::line(),
         px(theme::RADIUS_CARD),
     );
     let title = if app.pipeline_ui.running {
@@ -292,7 +335,7 @@ fn run_log(app: &App, ui: &mut egui::Ui, rect: Rect, s: f32) {
         Align2::LEFT_TOP,
         title,
         FontId::new(theme::text_px(12.0, s), theme::family_label()),
-        theme::INK_MUTED,
+        theme::ink_muted(),
     );
     let inner = Rect::from_min_max(
         Pos2::new(rect.left() + px(14.0), rect.top() + px(40.0)),
@@ -309,7 +352,7 @@ fn run_log(app: &App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                 ui.label(
                     egui::RichText::new("No run output yet.")
                         .font(FontId::new(theme::text_px(12.0, s), theme::family_medium()))
-                        .color(theme::INK_MUTED),
+                        .color(theme::ink_muted()),
                 );
             }
             for line in &app.pipeline_ui.logs {
@@ -317,7 +360,7 @@ fn run_log(app: &App, ui: &mut egui::Ui, rect: Rect, s: f32) {
                     egui::RichText::new(line)
                         .monospace()
                         .size(px(11.5))
-                        .color(theme::INK_DIM),
+                        .color(theme::ink_dim()),
                 );
             }
         });

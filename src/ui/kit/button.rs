@@ -82,27 +82,27 @@ impl<'a> Button<'a> {
 
         let (base_fill, hi_fill, fg, border) = match self.kind {
             ButtonKind::Primary => (
-                theme::PRIMARY,
-                theme::PRIMARY_HI,
-                theme::PRIMARY_INK,
-                Some(theme::with_alpha(theme::ACCENT_HI, 140)),
+                theme::primary(),
+                theme::primary_hi(),
+                theme::primary_ink(),
+                Some(theme::with_alpha(theme::accent_hi(), 140)),
             ),
             ButtonKind::Secondary => (
-                theme::FIELD,
-                theme::FIELD_HI,
-                theme::INK_DIM,
-                Some(theme::LINE),
+                theme::field(),
+                theme::field_hi(),
+                theme::ink_dim(),
+                Some(theme::line()),
             ),
             ButtonKind::Danger => (
-                theme::with_alpha(theme::DANGER, 22),
-                theme::with_alpha(theme::DANGER, 44),
-                theme::DANGER_INK,
-                Some(theme::with_alpha(theme::DANGER, 90)),
+                theme::with_alpha(theme::danger(), 22),
+                theme::with_alpha(theme::danger(), 44),
+                theme::danger_ink(),
+                Some(theme::with_alpha(theme::danger(), 90)),
             ),
             ButtonKind::Ghost => (
-                theme::with_alpha(theme::FIELD, 0),
-                theme::FIELD,
-                theme::INK_MUTED,
+                theme::with_alpha(theme::field(), 0),
+                theme::field(),
+                theme::ink_muted(),
                 None,
             ),
         };
@@ -121,7 +121,7 @@ impl<'a> Button<'a> {
                 ],
                 Stroke::new(
                     1.0,
-                    anim::with_opacity(theme::with_alpha(theme::PRIMARY_INK, 50), dim),
+                    anim::with_opacity(theme::with_alpha(theme::primary_ink(), 50), dim),
                 ),
             );
         }
@@ -135,7 +135,7 @@ impl<'a> Button<'a> {
         }
 
         let fg = if matches!(self.kind, ButtonKind::Secondary | ButtonKind::Ghost) {
-            theme::lerp_color(fg, theme::INK, hover)
+            theme::lerp_color(fg, theme::ink(), hover)
         } else {
             fg
         };
@@ -176,14 +176,14 @@ impl<'a> Button<'a> {
                 painter,
                 rect.expand(2.0),
                 radius + 2.0,
-                theme::with_alpha(theme::FOCUS, 180),
+                theme::with_alpha(theme::focus(), 180),
             );
         }
         if !self.enabled
             && let Some(reason) = self.reason
         {
             return resp.on_hover_ui(|ui| {
-                ui.colored_label(theme::INK, reason);
+                ui.colored_label(theme::ink(), reason);
             });
         }
         resp
@@ -207,14 +207,14 @@ pub fn icon_button(ui: &mut egui::Ui, rect: Rect, glyph: char, label: &str, s: f
     painter.rect_filled(
         rect,
         theme::corner(px(theme::RADIUS_FIELD)),
-        theme::with_alpha(theme::FIELD_HI, (hover * 255.0) as u8),
+        theme::with_alpha(theme::field_hi(), (hover * 255.0) as u8),
     );
     if resp.has_focus() {
         theme::focus_ring(
             painter,
             rect,
             px(theme::RADIUS_FIELD),
-            theme::with_alpha(theme::FOCUS, 180),
+            theme::with_alpha(theme::focus(), 180),
         );
     }
     painter.text(
@@ -222,7 +222,7 @@ pub fn icon_button(ui: &mut egui::Ui, rect: Rect, glyph: char, label: &str, s: f
         Align2::CENTER_CENTER,
         glyph.to_string(),
         theme::icon_font(px(16.0), false),
-        theme::lerp_color(theme::INK_MUTED, theme::INK, hover),
+        theme::lerp_color(theme::ink_muted(), theme::ink(), hover),
     );
     resp
 }

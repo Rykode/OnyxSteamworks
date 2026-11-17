@@ -51,7 +51,7 @@ fn status(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) -> bool {
                 Align2::RIGHT_CENTER,
                 err,
                 FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-                theme::DANGER,
+                theme::danger(),
             )
             .left();
     } else if dirty {
@@ -67,7 +67,7 @@ fn status(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) -> bool {
                 Align2::RIGHT_CENTER,
                 "Unsaved changes",
                 FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-                theme::WARNING,
+                theme::warning(),
             )
             .left();
     } else {
@@ -78,7 +78,7 @@ fn status(app: &mut App, ui: &mut egui::Ui, card: Rect, s: f32) -> bool {
         Pos2::new(right - px(16.0), y),
         Align2::RIGHT_CENTER,
         "VDF preview",
-        theme::INK_MUTED,
+        theme::ink_muted(),
         s,
     )
     .clicked()
@@ -138,7 +138,7 @@ fn fields(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &egui::Cont
     } else {
         project.set_live_branch.clone()
     };
-    let resolved = template::expand(&project.desc_template, &template::resolve(&project, &branch));
+    let resolved = template::expand(&project.desc_template, &template::resolve_preview(&project, &branch));
     if !resolved.trim().is_empty() {
         let clip = Rect::from_min_max(
             Pos2::new(col(0) + px(170.0), label_y(2) - px(10.0)),
@@ -150,7 +150,7 @@ fn fields(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32, ctx: &egui::Cont
             Align2::RIGHT_CENTER,
             &format!("Resolves to  {resolved}"),
             FontId::new(theme::text_px(12.0, s), theme::family_medium()),
-            theme::INK_FAINT,
+            theme::ink_faint(),
             clip.width(),
         );
     }
@@ -179,7 +179,7 @@ fn label(ui: &egui::Ui, pos: Pos2, text: &str, s: f32) {
         Align2::LEFT_CENTER,
         text,
         FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-        theme::INK_DIM,
+        theme::ink_dim(),
     );
 }
 
@@ -265,7 +265,7 @@ fn default_account(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
             Align2::LEFT_CENTER,
             "Add accounts in Settings > Accounts",
             FontId::new(theme::text_px(12.5, s), theme::family_medium()),
-            theme::INK_FAINT,
+            theme::ink_faint(),
         );
         return;
     }

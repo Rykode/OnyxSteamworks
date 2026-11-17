@@ -82,11 +82,11 @@ pub fn modal_with(
                 (200.0 * t.clamp(0.0, 1.0)) as u8,
             );
             ui.painter()
-                .rect_filled(prect, theme::corner(r), theme::SURFACE_2);
+                .rect_filled(prect, theme::corner(r), theme::surface_2());
             ui.painter().rect_stroke(
                 prect,
                 theme::corner(r),
-                Stroke::new(1.0, theme::LINE),
+                Stroke::new(1.0, theme::line()),
                 StrokeKind::Inside,
             );
             let mut cu = ui.new_child(UiBuilder::new().max_rect(prect));
@@ -101,7 +101,7 @@ pub fn modal_with(
 pub fn tooltip(response: egui::Response, text: &str) -> egui::Response {
     let text = text.to_owned();
     response.on_hover_ui(|ui| {
-        ui.colored_label(theme::INK, text);
+        ui.colored_label(theme::ink(), text);
     })
 }
 
@@ -115,9 +115,9 @@ pub enum ToastLevel {
 impl ToastLevel {
     fn color(self) -> Color32 {
         match self {
-            ToastLevel::Success => theme::SUCCESS,
-            ToastLevel::Warning => theme::WARNING,
-            ToastLevel::Error => theme::DANGER,
+            ToastLevel::Success => theme::success(),
+            ToastLevel::Warning => theme::warning(),
+            ToastLevel::Error => theme::danger(),
         }
     }
 }
@@ -130,6 +130,8 @@ struct Toast {
     born: f64,
     /// Optional inline action (label, id). Clicking it reports the id via `take_actions`.
     action: Option<(String, u64)>,
+    /// Stays until dismissed, like errors.
+    pinned: bool,
 }
 
 #[derive(Default)]
@@ -155,6 +157,7 @@ impl Toasts {
             text,
             born: -1.0,
             action: None,
+            pinned: false,
         });
         self.trim();
     }
@@ -166,6 +169,7 @@ impl Toasts {
         level: ToastLevel,
         text: impl Into<String>,
         label: impl Into<String>,
+        pinned: bool,
     ) -> u64 {
         self.next_action += 1;
         let id = self.next_action;
@@ -174,6 +178,7 @@ impl Toasts {
             text: text.into(),
             born: -1.0,
             action: Some((label.into(), id)),
+            pinned,
         });
         self.trim();
         id
@@ -209,7 +214,7 @@ impl Toasts {
             }
         }
         self.items
-            .retain(|t| t.level == ToastLevel::Error || now - t.born < ttl_of(t));
+            .retain(|t| t.level == ToastLevel::Error || t.pinned || now - t.born < ttl_of(t));
         let ctx = ui.ctx().clone();
         let animating = self
             .items
@@ -230,13 +235,13 @@ impl Toasts {
             .show(&ctx, |ui| {
                 let mut y = anchor.y;
                 for (i, t) in items.iter().enumerate() {
-                    let sticky = t.level == ToastLevel::Error;
+                    let sticky = t.level == ToastLevel::Error || t.pinned;
                     let ttl = ttl_of(t);
                     let action_w = t.action.as_ref().map_or(0.0, |_| px(72.0));
                     let galley = ui.painter().layout(
                         t.text.clone(),
                         FontId::new(theme::text_px(13.0, s), theme::family_medium()),
-                        theme::INK,
+                        theme::ink(),
                         w - px(52.0) - action_w,
                     );
                     let h = (galley.size().y + px(24.0)).max(px(46.0));
@@ -261,11 +266,11 @@ impl Toasts {
                     }
                     theme::shadow(ui.painter(), r, radius, 20, 150);
                     ui.painter()
-                        .rect_filled(r, theme::corner(radius), theme::FIELD);
+                        .rect_filled(r, theme::corner(radius), theme::field());
                     ui.painter().rect_stroke(
                         r,
                         theme::corner(radius),
-                        Stroke::new(1.0, theme::LINE),
+                        Stroke::new(1.0, theme::line()),
                         StrokeKind::Inside,
                     );
                     ui.painter().circle_filled(
@@ -277,7 +282,7 @@ impl Toasts {
                     ui.painter().galley(
                         Pos2::new(r.left() + px(34.0), r.center().y - text_h / 2.0),
                         galley,
-                        theme::INK,
+                        theme::ink(),
                     );
                     if let Some((label, id)) = &t.action {
                         let b = Rect::from_min_size(
