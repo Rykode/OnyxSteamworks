@@ -83,6 +83,10 @@ onyx pipeline list --project <name>
 onyx pipeline run [--project <name>] [--pipeline <name>] [--schedule <id>] [--if-triggered]
 ```
 
+`onyx --version` prints the installed version.
+
+`onyx --open <folder>` is the one argument that opens the window instead: it shows the project whose content folder holds `<folder>` on the Build page, or offers to create a project from the folder when none does. GodotHub uses it to hand a finished export to Onyx.
+
 Exit codes are meant for scripts and CI:
 
 | Code | Meaning |

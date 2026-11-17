@@ -48,18 +48,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, frame: Rect, s: f32) {
     });
     app.drop.hovering = hovered;
 
-    if app.drop.pending.is_none()
-        && !app.drop.busy
-        && let Some(folder) = dropped.into_iter().find(|p| p.is_dir())
-    {
-        app.drop.busy = true;
-        let tx = app.drop.tx.clone();
-        let ctx2 = ctx.clone();
-        std::thread::spawn(move || {
-            let detected = importer::detect(&folder);
-            let _ = tx.send(detected);
-            ctx2.request_repaint();
-        });
+    if let Some(folder) = dropped.into_iter().find(|p| p.is_dir()) {
+        begin(app, folder, &ctx);
     }
 
     if app.drop.hovering && app.drop.pending.is_none() {
@@ -67,6 +57,22 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, frame: Rect, s: f32) {
         overlay(&ctx, oid, frame, s);
     }
     confirm(app, ui, s);
+}
+
+/// Detects a game folder in the background, then asks to create a project from it,
+/// the same as dropping the folder on the window.
+pub fn begin(app: &mut App, folder: PathBuf, ctx: &egui::Context) {
+    if app.drop.pending.is_some() || app.drop.busy {
+        return;
+    }
+    app.drop.busy = true;
+    let tx = app.drop.tx.clone();
+    let ctx2 = ctx.clone();
+    std::thread::spawn(move || {
+        let detected = importer::detect(&folder);
+        let _ = tx.send(detected);
+        ctx2.request_repaint();
+    });
 }
 
 fn overlay(ctx: &egui::Context, id: egui::Id, frame: Rect, s: f32) {

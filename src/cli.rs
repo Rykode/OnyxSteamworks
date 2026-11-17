@@ -6,7 +6,7 @@ use crate::model::Project;
 use exec::{FAILURE, SUCCESS, VALIDATION};
 
 #[derive(Parser)]
-#[command(name = "onyx", about = "Headless build and upload for Onyx projects")]
+#[command(name = "onyx", version, about = "Headless build and upload for Onyx projects")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
