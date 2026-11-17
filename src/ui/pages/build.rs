@@ -98,20 +98,42 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, layout: &Layout) {
 
     let gap = px(15.0);
     let left_w = px(341.5);
+    let stages_h = px(302.0);
+    let running = app.build_ui.running && !app.build_ui.authorizing;
     let status = Rect::from_min_size(body.min, Vec2::new(left_w, px(85.0)));
-    let stages_rect = Rect::from_min_size(
-        Pos2::new(body.left(), status.bottom() + gap),
-        Vec2::new(left_w, px(302.0)),
-    );
-    let lower = Rect::from_min_max(
-        Pos2::new(body.left(), stages_rect.bottom() + gap),
-        Pos2::new(body.left() + left_w, body.bottom()),
-    );
+    // Left column order follows what the user can act on. Idle: the run's settings sit
+    // under the status and the stage readout drops to the bottom. Running: progress
+    // moves up under the status and upload speed takes the settings' place.
+    let (stages_rect, lower) = if running {
+        let stages_rect = Rect::from_min_size(
+            Pos2::new(body.left(), status.bottom() + gap),
+            Vec2::new(left_w, stages_h),
+        );
+        let lower = Rect::from_min_max(
+            Pos2::new(body.left(), stages_rect.bottom() + gap),
+            Pos2::new(body.left() + left_w, body.bottom()),
+        );
+        (stages_rect, lower)
+    } else {
+        let stages_rect = Rect::from_min_max(
+            Pos2::new(body.left(), body.bottom() - stages_h),
+            Pos2::new(body.left() + left_w, body.bottom()),
+        );
+        // Settings card hugs its content; spare height goes to the end of the column.
+        let lower = Rect::from_min_size(
+            Pos2::new(body.left(), status.bottom() + gap),
+            Vec2::new(left_w, options_card_h(app, &project, s)),
+        );
+        let stages_rect = Rect::from_min_max(
+            Pos2::new(body.left(), (lower.bottom() + gap).min(stages_rect.top())),
+            stages_rect.max,
+        );
+        (stages_rect, lower)
+    };
     let right = Rect::from_min_max(Pos2::new(status.right() + gap, body.top()), body.max);
     let tiles = Rect::from_min_size(right.min, Vec2::new(right.width(), px(69.0)));
     let console_rect = Rect::from_min_max(Pos2::new(right.left(), tiles.bottom() + gap), right.max);
 
-    let running = app.build_ui.running && !app.build_ui.authorizing;
     let speed_rect = Rect::from_min_size(lower.min, Vec2::new(lower.width(), px(239.5)));
     for r in [status, stages_rect, console_rect] {
         kit::card(ui.painter(), r, s);
@@ -530,7 +552,12 @@ fn options_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project,
         .auto_shrink([false, false])
         .show(&mut cui, |ui| {
             let w = area.width() - px(6.0);
-            let (r, _) = ui.allocate_exact_size(Vec2::new(w, px(318.0)), egui::Sense::hover());
+            // Reserve only what is drawn below, so the panel scrolls only when it must.
+            let cached = accounts::cached_login_for_project(project).is_some();
+            let (r, _) = ui.allocate_exact_size(
+                Vec2::new(w, options_content_h(app, project, s)),
+                egui::Sense::hover(),
+            );
             let x = r.left();
             let mut y = r.top();
             Input::new(&mut app.build_ui.description)
@@ -549,38 +576,49 @@ fn options_card(app: &mut App, ui: &mut egui::Ui, card: Rect, project: &Project,
             y += px(34.0);
             set_live_row(app, ui, Pos2::new(x, y), w, project, s);
             y += px(44.0);
-            actions::cli_actions(app, ui, Rect::from_min_size(Pos2::new(x, y), Vec2::new(w, px(32.0))), project, s);
-            y += px(44.0);
-            actions::quick_actions(app, ui, Rect::from_min_size(Pos2::new(x, y), Vec2::new(w, px(30.0))), project, s);
-            y += px(46.0);
-            let auth = Rect::from_min_size(Pos2::new(x, y), Vec2::new(w, px(32.0)));
-            let cached = accounts::cached_login_for_project(project).is_some();
-            let has_user = !project.steam_username.trim().is_empty();
-            let (dot, text) = if cached {
-                (theme::SUCCESS, "Steam login cached")
-            } else {
-                (theme::WARNING, "No cached login")
-            };
-            ui.painter().circle_filled(Pos2::new(x + px(4.0), auth.center().y), px(3.5), dot);
-            ui.painter().text(
-                Pos2::new(x + px(14.0), auth.center().y),
-                Align2::LEFT_CENTER,
-                text,
-                FontId::new(px(12.5), theme::family_medium()),
-                theme::INK_DIM,
-            );
-            let bw = px(118.0);
-            if Button::new(if cached { "Re-authorize" } else { "Authorize" }, ButtonKind::Secondary)
-                .enabled(has_user)
-                .show(ui, Rect::from_min_size(Pos2::new(auth.right() - bw, auth.top()), Vec2::new(bw, auth.height())), s)
-                .clicked()
-                && has_user
-            {
-                authorize(app, project, ctx);
+            // A cached login is already shown in the sidebar footer; only a missing one
+            // blocks the build, so only that case earns space here.
+            if !cached {
+                let auth = Rect::from_min_size(Pos2::new(x, y), Vec2::new(w, px(32.0)));
+                let has_user = !project.steam_username.trim().is_empty();
+                ui.painter().circle_filled(Pos2::new(x + px(4.0), auth.center().y), px(3.5), theme::WARNING);
+                ui.painter().text(
+                    Pos2::new(x + px(14.0), auth.center().y),
+                    Align2::LEFT_CENTER,
+                    if has_user { "No cached Steam login" } else { "No Steam account set" },
+                    FontId::new(px(12.5), theme::family_medium()),
+                    theme::INK_DIM,
+                );
+                let bw = px(118.0);
+                if Button::new("Authorize", ButtonKind::Secondary)
+                    .enabled(has_user)
+                    .disabled_reason("Pick an account in Settings > Accounts first")
+                    .show(ui, Rect::from_min_size(Pos2::new(auth.right() - bw, auth.top()), Vec2::new(bw, auth.height())), s)
+                    .clicked()
+                    && has_user
+                {
+                    authorize(app, project, ctx);
+                }
+                y += px(46.0);
             }
+            let more = Rect::from_min_size(Pos2::new(x, y), Vec2::new(w, px(34.0)));
+            actions::more_actions(app, ui, more, project, s, ctx);
             y += px(46.0);
             stages::verify_offer(app, ui, Rect::from_min_size(Pos2::new(x, y), Vec2::new(w, px(34.0))), s);
         });
+}
+
+/// Height of everything `options_card` draws below its title, in layout order:
+/// description, Preview, Set live, the missing-login row, More actions, Verify.
+fn options_content_h(app: &App, project: &Project, s: f32) -> f32 {
+    let login_row = if accounts::cached_login_for_project(project).is_some() { 0.0 } else { 46.0 };
+    let verify = if stages::verify_ready(app) { 12.0 + 34.0 } else { 0.0 };
+    theme::px(50.0 + 34.0 + 44.0 + login_row + 34.0 + verify, s)
+}
+
+/// Card height for `options_card`: its 44px title band, the content, and bottom padding.
+fn options_card_h(app: &App, project: &Project, s: f32) -> f32 {
+    theme::px(44.0 + 20.0, s) + options_content_h(app, project, s)
 }
 
 /// The switch that decides whether this upload goes live on the chosen branch.

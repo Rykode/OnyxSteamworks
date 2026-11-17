@@ -82,8 +82,8 @@ impl<'a> Button<'a> {
 
         let (base_fill, hi_fill, fg, border) = match self.kind {
             ButtonKind::Primary => (
-                theme::ACCENT,
-                theme::ACCENT_HI,
+                theme::PRIMARY,
+                theme::PRIMARY_HI,
                 theme::PRIMARY_INK,
                 Some(theme::with_alpha(theme::ACCENT_HI, 140)),
             ),
@@ -96,7 +96,7 @@ impl<'a> Button<'a> {
             ButtonKind::Danger => (
                 theme::with_alpha(theme::DANGER, 22),
                 theme::with_alpha(theme::DANGER, 44),
-                theme::DANGER,
+                theme::DANGER_INK,
                 Some(theme::with_alpha(theme::DANGER, 90)),
             ),
             ButtonKind::Ghost => (

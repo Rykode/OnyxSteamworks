@@ -18,12 +18,17 @@ pub const WELL: Color32 = Color32::from_rgb(0x12, 0x14, 0x16);
 pub const INK: Color32 = Color32::from_rgb(0xF4, 0xF5, 0xF7);
 pub const INK_DIM: Color32 = Color32::from_rgb(0xC9, 0xCF, 0xDA);
 pub const INK_MUTED: Color32 = Color32::from_rgb(0x9A, 0xA3, 0xB2);
-pub const INK_FAINT: Color32 = Color32::from_rgb(0x6B, 0x72, 0x80);
+// Lowest text tier. Must stay >= 4.5:1 on BG, SURFACE, SURFACE_2 and FIELD (WCAG 1.4.3).
+pub const INK_FAINT: Color32 = Color32::from_rgb(0x8A, 0x93, 0xA3);
 
 pub const ACCENT: Color32 = Color32::from_rgb(0x4F, 0x7C, 0xFF);
 pub const ACCENT_HI: Color32 = Color32::from_rgb(0x7A, 0xA0, 0xFF);
 
 pub const PRIMARY_INK: Color32 = Color32::from_rgb(0xFF, 0xFF, 0xFF);
+// Primary button fills carry PRIMARY_INK text, so both keep >= 4.5:1 against white.
+// ACCENT stays brighter for non-text marks (toggles, progress, focus) that need 3:1.
+pub const PRIMARY: Color32 = Color32::from_rgb(0x3F, 0x66, 0xE0);
+pub const PRIMARY_HI: Color32 = Color32::from_rgb(0x45, 0x69, 0xE0);
 pub const FOCUS: Color32 = Color32::from_rgb(0x4F, 0x7C, 0xFF);
 
 pub const SEGMENT_IDLE: Color32 = Color32::from_rgb(0x34, 0x36, 0x3E);
@@ -31,7 +36,10 @@ pub const TRACK: Color32 = Color32::from_rgb(0x2C, 0x2E, 0x36);
 
 pub const SUCCESS: Color32 = Color32::from_rgb(0x2F, 0xBF, 0x71);
 pub const WARNING: Color32 = Color32::from_rgb(0xF0, 0xB1, 0x32);
-pub const DANGER: Color32 = Color32::from_rgb(0xF2, 0x55, 0x5A);
+// >= 4.5:1 as text on BG, SURFACE, SURFACE_2 and FIELD.
+pub const DANGER: Color32 = Color32::from_rgb(0xF5, 0x68, 0x6D);
+// Text on DANGER-tinted fills (danger buttons), where DANGER itself drops below 4.5:1.
+pub const DANGER_INK: Color32 = Color32::from_rgb(0xFF, 0x82, 0x85);
 
 pub const RADIUS_APP: f32 = 12.0;
 pub const RADIUS_PANEL: f32 = 18.0;

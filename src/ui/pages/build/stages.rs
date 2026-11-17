@@ -222,11 +222,14 @@ fn area_chart(painter: &egui::Painter, rect: Rect, samples: &[f32], s: f32) {
     painter.add(egui::Shape::line(pts, Stroke::new(theme::px(2.0, s), theme::ACCENT_HI)));
 }
 
-pub(super) fn verify_offer(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
-    let ready = app.build_ui.verify
+pub(super) fn verify_ready(app: &App) -> bool {
+    app.build_ui.verify
         && !app.build_ui.verify_ui.running()
-        && matches!(&app.build_ui.outcome, Some(BuildResult::Success { app_id }) if !app_id.is_empty());
-    if !ready {
+        && matches!(&app.build_ui.outcome, Some(BuildResult::Success { app_id }) if !app_id.is_empty())
+}
+
+pub(super) fn verify_offer(app: &mut App, ui: &mut egui::Ui, rect: Rect, s: f32) {
+    if !verify_ready(app) {
         return;
     }
     if kit::Button::new("Verify build", kit::ButtonKind::Secondary)
