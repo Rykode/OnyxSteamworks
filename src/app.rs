@@ -1,5 +1,7 @@
 use eframe::egui::{self, Align2, FontId, Pos2, UiBuilder};
 
+use std::path::{Path, PathBuf};
+
 use crate::model::Project;
 use crate::ui::kit;
 use crate::ui::kit::rail::RailAction;
@@ -57,7 +59,34 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>, open_folder: Option<PathBuf>) -> Self {
+        let mut app = Self::create(cc);
+        if let Some(folder) = open_folder {
+            app.open_folder(folder, &cc.egui_ctx);
+        }
+        app
+    }
+
+    /// Shows the project whose content folder holds `folder` on the Build page, or offers
+    /// to create a project from the folder when no project does.
+    fn open_folder(&mut self, folder: PathBuf, ctx: &egui::Context) {
+        if !folder.is_dir() {
+            self.toasts.push(
+                kit::ToastLevel::Error,
+                format!("Folder not found: {}", folder.display()),
+            );
+            return;
+        }
+        match project_for_folder(&self.projects, &folder).cloned() {
+            Some(project) => {
+                self.projects_ui.select(&project);
+                self.nav_request = Some(Page::Build);
+            }
+            None => crate::ui::dropimport::begin(self, folder, ctx),
+        }
+    }
+
+    fn create(cc: &eframe::CreationContext<'_>) -> Self {
         theme::apply_theme(&cc.egui_ctx);
         crate::ui::window::round_corners(cc);
         egui_extras::install_image_loaders(&cc.egui_ctx);
@@ -502,5 +531,52 @@ impl eframe::App for App {
                 self.toasts.show(ui, lay.toast_anchor, s);
                 crate::ui::window::resize_edges(ui, ui.max_rect(), s);
             });
+    }
+}
+
+/// The project whose content folder is `folder` or contains it. When content folders
+/// nest, the deepest one wins.
+fn project_for_folder<'a>(projects: &'a [Project], folder: &Path) -> Option<&'a Project> {
+    let folder = normalize(folder);
+    projects
+        .iter()
+        .filter(|p| !p.content_root.as_os_str().is_empty())
+        .map(|p| (p, normalize(&p.content_root)))
+        .filter(|(_, root)| folder.starts_with(root))
+        .max_by_key(|(_, root)| root.components().count())
+        .map(|(p, _)| p)
+}
+
+fn normalize(path: &Path) -> PathBuf {
+    std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn project(id: &str, root: &Path) -> Project {
+        Project {
+            id: id.into(),
+            content_root: root.to_path_buf(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn folder_matches_deepest_content_root() {
+        let base = std::env::temp_dir().join(format!("onyx-open-{}", uuid::Uuid::new_v4()));
+        let inner = base.join("game");
+        let export = inner.join("windows");
+        std::fs::create_dir_all(&export).unwrap();
+        let projects = vec![
+            project("outer", &base),
+            project("inner", &inner),
+            project("empty", Path::new("")),
+        ];
+        assert_eq!(project_for_folder(&projects, &export).map(|p| p.id.as_str()), Some("inner"));
+        assert_eq!(project_for_folder(&projects, &inner).map(|p| p.id.as_str()), Some("inner"));
+        assert_eq!(project_for_folder(&projects, &std::env::temp_dir()).map(|p| p.id.as_str()), None);
+        std::fs::remove_dir_all(&base).unwrap();
     }
 }

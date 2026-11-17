@@ -19,9 +19,14 @@ mod vdf;
 use eframe::egui;
 
 fn main() -> eframe::Result {
-    if std::env::args_os().count() > 1 {
-        std::process::exit(cli::run());
-    }
+    let args: Vec<std::ffi::OsString> = std::env::args_os().skip(1).collect();
+    // `--open <folder>` is the one argument that still opens the window; it is how other
+    // apps such as GodotHub hand a freshly exported build over. Anything else is the CLI.
+    let open_folder = match args.as_slice() {
+        [] => None,
+        [flag, folder] if flag == "--open" => Some(std::path::PathBuf::from(folder)),
+        _ => std::process::exit(cli::run()),
+    };
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -36,6 +41,6 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Onyx",
         native_options,
-        Box::new(|cc| Ok(Box::new(app::App::new(cc)))),
+        Box::new(|cc| Ok(Box::new(app::App::new(cc, open_folder)))),
     )
 }
